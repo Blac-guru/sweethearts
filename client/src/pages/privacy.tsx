@@ -1,0 +1,286 @@
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import Navbar from "@/components/navbar.jsx";
+import { Button } from "@/components/ui/button.jsx";
+
+export default function PrivacyPolicyPage() {
+  const [, setLocation] = useLocation();
+  const [isAdult, setIsAdult] = useState(false);
+
+  useEffect(() => {
+    const storedIsAdult = localStorage.getItem("isAdult");
+    if (storedIsAdult === "true") {
+      setIsAdult(true);
+    }
+  }, []);
+
+  const handleAgree = () => {
+    localStorage.setItem("PrivacyPolicyPageAgreed", "true");
+    setLocation("/register");
+  };
+
+  const handleDisagree = () => {
+    setLocation("/");
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 className="text-3xl font-bold text-foreground mb-6">Privacy Policy</h1>
+
+        <div className="space-y-6 text-foreground">
+          <p>Privacy Policy</p>
+          <p>Privacy Policy</p>
+          <p>Effective Date: October 02, 2025</p>
+          <p>Last Modified: January 04, 2024</p>
+          <p>Introduction</p>
+          <p>Company’s Privacy Policy is intended to help you understand what information we collect about you and how we process your personal data.</p>
+          <p>This Privacy Policy is directed towards individuals (data subjects) using the website, including:</p>
+          <p>Users that access our website or services in any way (the “Users”), including mere visitors who do not register for any type of account/profile. For the purposes of this Privacy Policy, the terms “account” and “profile” have the same meaning and are interchangeable.</p>
+          <p>Registered members who have created an account (the “Members”).</p>
+          <p>Verified members that have applied for our content creators’ program (the “Verified Members”).</p>
+          <p>Registered partners (the "Partners").</p>
+          <p>Depending on the context of the wording in the Privacy Policy, the Users, Members, Verified Members, and Partners may be referred to collectively as “you”, “your”.</p>
+          <p>As far as this Privacy Policy is an internal part of our Terms and Conditions / User Agreement available here https://hiresweetheart.co.ke/terms (“Agreement” or “Terms and Conditions” or “Terms”), Users, Members, Verified Members, and Partners agree with the Privacy Policy per clause 2 of the Terms and Conditions. If any User, Member, Verified Member, or Partner does not agree with the terms of this Privacy Policy, the use and access to our website and services will not be available to them, and we strongly advise them to refrain from using or immediately stop using our website and services.</p>
+          <p>Definitions</p>
+          <p>For the purposes of this Privacy Policy, the following terms shall have the following meanings:</p>
+          <p>Personal data: any information relating to an identified or identifiable natural person. An identifiable natural person is one who can be identified, directly or indirectly, in particular by reference to an identifier such as a name, an identification number, location data, an online identifier or to one or more factors specific to the physical, physiological, genetic, mental, economic, cultural, or social identity of that natural person.</p>
+          <p>Data subject: any identified or identifiable natural person, whose personal data is processed by the controller responsible for the processing.</p>
+          <p>Processing: any operation or set of operations which is performed on personal data or on sets of personal data, whether or not by automated means, such as collection, recording, organization, structuring, storage, adaptation or alteration, retrieval, consultation, use, disclosure by transmission, dissemination or otherwise making available, alignment or combination, restriction, erasure, or destruction.</p>
+          <p>Controller: the natural or legal person, public authority, agency, or other body which, alone or jointly with others, determines the purposes and means of the processing of personal data.</p>
+          <p>Processor: a natural or legal person, public authority, agency, or other body which processes personal data on behalf of the controller.</p>
+          <p>Consent: any freely given, specific, informed, and unambiguous indication of the data subject's wishes by which he or she, by a statement or by a clear affirmative action, signifies agreement to the processing of personal data relating to him or her.</p>
+          <p>If applicable and unless otherwise expressly stated in this Privacy Policy, all definitions herein shall be understood, as they appear in the Terms and Conditions and in the General Data Protection Regulation (the “GDPR”).</p>
+          <p>Who we are</p>
+          <p>Who we are 3.1Who we are 3.1Who we are 3.1Who we are 3.1Who we are 3.1Who we are 3.1Who we are 3.1</p>
+          <p>Who we are 3.2Who we are 3.2Who we are 3.2Who we are 3.2Who we are 3.2</p>
+          <p>For any inquiries about this Privacy Policy or your personal data, please contact us through our Contact us/Single point of contact and select the 'Privacy/GDPR Requests' option.</p>
+          <p>When do we collect your personal data</p>
+          <p>We collect your personal data through information you provide directly on the Website, including when you:</p>
+          <p>Interact with, visit and/or use the Website and any of its features;</p>
+          <p>Complete our registration as a Member, Verified Member, and/or Partner;</p>
+          <p>Upload content;</p>
+          <p>Participate in surveys;</p>
+          <p>Report issues;</p>
+          <p>Request support through our contact details;</p>
+          <p>Communicate with us via email, post, or other means of communication.</p>
+          <p>Furthermore, we may collect your personal data whenever you interact with the Website, utilizing technologies such as cookies, as described below.</p>
+          <p>Where processing your personal data is necessary to provide you with our services, failure to provide such data may result in our inability to grant you access to the Websites’ features and/or the services. This might lead to suspended access to the Website or, if you are a Member, Verified Member, or Partner, restricted account operations.</p>
+          <p>What information we collect</p>
+          <p>We process different categories of information depending on your type of interaction with the Website:</p>
+          <p>Information processed by us related to Users:</p>
+          <p>Technical data, including your Internet Protocol (IP) address, browser type and version, time zone setting, location, browser plug-in types and versions, smart device information, mobile phone network information, operating system and platform, and other information about the devices you use to access the Website (for more information on how these data are collected, please read our cookie policy at https://hiresweetheart.co.ke/cookie-policy). This data is collected for statistical purposes, as further described below, and there is no technical capability to personally identify you with this data;</p>
+          <p>Usage data, including your communication preferences and information about how you use our Website. This may include the services you viewed or searched for, your page response times, download errors, length and number of visits and page interaction information (such as scrolling, clicks, and mouse hovers), as well as the links you clicked or used, depending on your cookie selections. This data is collected for statistical purposes, as described below, and there is no technical capability to identify you with this data;</p>
+          <p>User submitted data, including any information you provide for specific functions, such as communication with us; and</p>
+          <p>Any consents, permissions, or preferences you provided to the Website.</p>
+          <p>Information collected from Members:</p>
+          <p>All information we collect from Users;</p>
+          <p>Your username and password;</p>
+          <p>Your email-address (including the verified or non-verified status of the email address), location (country, region and city), languages, gender, orientation, seeking preferences, and interests (if provided during registration or afterwards in your account/profile);</p>
+          <p>Any post-registration information provided, such as your profile photos, birthday, education, sports preferences, and other information that you may indicate using the interface of your account/profile;</p>
+          <p>Your favorites, comments, personal messages, logging information, likes etc., if applicable;</p>
+          <p>Marketing information, including preferences in receiving marketing from us and third parties. For marketing purposes, we may also automatically record information about your usage of the Website, including actions taken, date and time, network connectivity, and performance information related to logins, clicks, and other feature usage and marketing-related information;</p>
+          <p>Communications, including information you share with us or exchange with other users of the platform; and</p>
+          <p>Information collected from Verified Members:</p>
+          <p>All information we collect from Users and Members, where applicable;</p>
+          <p>Copy of your ID document (which can be national ID, national passport, international passport, citizenship card, state ID, driver’s license (only for countries where a national ID or passport is not mandatory));</p>
+          <p>Your picture (photo), visual appearance, date of birth, and place of residence;</p>
+          <p>Information related to payments (payment information), methods of payments and balance of your account, status, date, and provider of payments;</p>
+          <p>Verified Members will also be required to verify their age and identity with the help of our trusted third-party service provider(s). By proceeding with such verification via the third-party service provider, Verified Member authorizes us to transfer the personal data to the third party which is necessary for the purposes of confirming their legal age and identity and (if applicable) for the purpose of creating an account on third parties’ websites (including third-party service providers from the list specified in clause 8 of this Privacy Policy);</p>
+          <p>Any submitted data, including data you choose to share on the Website, such as your feedback, any written content, agreements, extracts, identification documents, images, videos, or other content or media.</p>
+          <p>Information collected from Partners:</p>
+          <p>All personal data we collect from Users, Members, and Verified Members, where applicable;</p>
+          <p>Financial data, including payment information and selected payment method;</p>
+          <p>Personal data you provide for a specific function, for instance your contact information and address.</p>
+          <p>Different countries, governments, and states may have different laws and regulations that may require you to confirm your age of majority before accessing the Website or using special part of the Website. In such cases, we may process your biometric data (where applicable and where the chosen method of confirmation of your age requires the provision of such data).</p>
+          <p>In all interaction types described above, aggregated data might be utilized for statistical analysis and customization, devoid of any personal identifiers:</p>
+          <p>We may collect, use, and share aggregated data such as statistical or demographic data to customize our marketing strategies or Website.</p>
+          <p>Aggregated data may be derived from your personal data but does not qualify as personal data as it does not directly or indirectly reveal your identity. For example, we may aggregate your usage data to calculate the percentage of users accessing a specific Website feature, to generate statistics about our users, to calculate ad impressions served or clicked on, or to publish visitor demographics.</p>
+          <p>If we combine or connect aggregated data with your personal data so that it can directly or indirectly identify you, we will treat the combined data as personal data which shall be processed in accordance with this Privacy Policy.</p>
+          <p>Why we process your personal data</p>
+          <p>Your personal data is being processed for the below purposes:</p>
+          <p>Provision of our services as defined on the Website and in the Terms and Conditions We process your personal data when necessary to present our Website, its features and to provide you with the content and services you request in accordance with our Terms and Conditions. Please be aware that if you choose not to provide certain requested information, it may affect your ability to access and use our platform effectively.</p>
+          <p>Account management</p>
+          <p>We process your personal data to manage your account, offer customer support, and send you important notifications about your account. We also use this information to provide any system and security notifications including informing you of any changes to our Platform or services that may affect you.</p>
+          <p>Communication</p>
+          <p>We process your personal data to send you periodic emails to inform you of any similar services that we offer that may be of interest to you.</p>
+          <p>User Support</p>
+          <p>We process your personal data to provide customer support and address your inquiries or any issues you might experience.</p>
+          <p>Personalization</p>
+          <p>Your personal data may be processed to personalize your user experience, such as recommending videos or content based on your preferences and viewing history.</p>
+          <p>Analytics and Improvement</p>
+          <p>Your personal data may be processed to improve the platform's functionality, to determine whether users of the Website are unique, or whether the same user is using the Website on multiple occasions. We also use this to monitor aggregate metrics such as the total number of visitors, pages viewed, and demographic patterns.</p>
+          <p>Research and Development</p>
+          <p>Data may be anonymized and aggregated for research and development purposes, such as identifying trends and improving the platform's features. Data may also be used to develop new services on our Website as well as to analyze and target new markets.</p>
+          <p>Security</p>
+          <p>We process your personal data to enhance platform security, including detecting and preventing fraud, spam, and unauthorized access. We may also process your personal data where it is necessary in order to diagnose or fix technology issues, and to detect, prevent and respond to actual or potential fraud, illegal activities, or intellectual property infringements.</p>
+          <p>Advertising and Marketing</p>
+          <p>Your personal data may be processed for targeted advertising and marketing purposes. This means that we may use the information we collect to tailor advertisements and promotional content to your interests.</p>
+          <p>Payment Processing</p>
+          <p>If you are a Verified Member or Partner, your personal information will be processed for billing and payment purposes.</p>
+          <p>Legal Compliance and risk management</p>
+          <p>Your personal data may be processed in compliance with various legal regulations in order to meet legal obligations and conduct risk assessments.</p>
+          <p>Responding to legal authorities' requests</p>
+          <p>Your personal data may be processed in order to provide assistance to competent authorities in their investigations, civil claims, criminal proceedings or prosecutions in accordance with official orders and requests.</p>
+          <p>What is our legal basis for processing your personal data</p>
+          <p>We process your personal data if one of the following applies:</p>
+          <p>When you have given your consent (Article 6(1)(a) of the GDPR):</p>
+          <p>We may request your consent to process your information for specific purposes. In such cases, you will have the right to withdraw your consent at any time. However, any processing of personal data prior to receiving your withdrawal will not be affected.</p>
+          <p>Where it is necessary for the performance of a contract (Article 6(1)(b) of the GDPR), including:</p>
+          <p>Execution of the Terms and Conditions / User Agreement and any other contract we may have with you;</p>
+          <p>Storing and hosting of your uploaded video content;</p>
+          <p>Providing access to your video content to the platform’s users;</p>
+          <p>Making your video content available to the general public;</p>
+          <p>Processing your payment information for payment administration, if applicable.</p>
+          <p>When complying with our legal obligations (Article 6(1)(c) of the GDPR):</p>
+          <p>We are required to comply with certain legal obligations which may involve the processing of your personal data. These obligations may include:</p>
+          <p>Storing your payment information for tax and/or audit purposes;</p>
+          <p>Addressing any legal claims, disputes, or investigations related to you or to your video content;</p>
+          <p>Complying with requests for information received from competent authorities, law enforcement authorities, or government authorities;</p>
+          <p>Performing checks and complying with laws relating to fraud prevention;</p>
+          <p>Verifying your legal age. For this purpose, please note the following regarding your personal data:</p>
+          <p>Age Verification by Yoti:</p>
+          <p>Your biometric data will be collected and processed via our service provider, Yoti, to verify your age. To understand how your personal data will be processed, you can refer to their privacy notice available here: https://www.yoti.com/privacy/.</p>
+          <p>When we verify your age as a User/Member of our platform, we do not receive any of your personal data from Yoti. We only receive a session result indicating whether a user is above the required age threshold.</p>
+          <p>Retention Period: Yoti deletes all personal data it collects once the age verification check is complete.</p>
+          <p>Age Verification By Verifymy:</p>
+          <p>Your biometric data will be collected and processed via our service provider, Verifymy, to verify your age. To understand how your personal data will be processed, you can refer to their privacy notice available here: https://verifymy.io/age-verification-and-estimation/age-assurance-privacy-policy/ .</p>
+          <p>When we verify your age as a User/Member of our platform, we do not receive any of your personal data from Verifymy. We only receive a session result indicating whether a user is above the required age threshold.</p>
+          <p>Retention Period: Verifymy deletes all personal data it collects once the age verification check is complete.</p>
+          <p>Digital ID wallet:</p>
+          <p>Age verification may be conducted using a Digital ID wallet, such as Google Wallet.</p>
+          <p>Retention Period: Any personal data used for the age verification through the Digital ID wallet is managed and retained in accordance with the privacy policy of the digital ID wallet provider.</p>
+          <p>What is our legal basis for processing your personal dataWhat is our legal basis for processing your personal data</p>
+          <p>When protecting the vital interests of any individual (Article 6(1)(d) of the GDPR):</p>
+          <p>We may process personal data to protect the vital interests of individuals, such as in emergency situations where someone's life or physical integrity might be at risk.</p>
+          <p>When it is necessary for the purposes of the legitimate interests (Article 6(1)(f) of the GDPR), we pursue:</p>
+          <p>Providing, maintaining, and improving our services;</p>
+          <p>Developing new features;</p>
+          <p>Monitoring, maintaining and improving internal business processes and services;</p>
+          <p>Sending you details of similar services we provide;</p>
+          <p>Providing marketing communications;</p>
+          <p>Identifying infringements of our Terms and Conditions;</p>
+          <p>Analyzing and evaluating the video content for quality control and compliance monitoring;</p>
+          <p>Ensuring network information security, including monitoring Users' access to our information technology for the purpose of preventing cyber-attacks, unauthorized use of the Website, and prevention or detection of crime;</p>
+          <p>Detecting or preventing fraud, abuse, security, or technical issues with our services;</p>
+          <p>Reporting to or cooperating with government authorities and organizations;</p>
+          <p>Responding to any queries, requests, or technical issues;</p>
+          <p>Protecting our legal rights and interests (including when receiving any legal claims);</p>
+          <p>Monitoring the performance and effectiveness of our services and the Website;</p>
+          <p>Assessing the quality of the provided services.</p>
+          <p>When interacting with the Website and using all available features of the Website, you may choose to voluntarily provide special categories of personal data to us. The processing of your special categories of personal data will be carried out on the legal basis and for the purposes set out in the following paragraphs.</p>
+          <p>When you have provided your explicit consent (Article 9(2)(a) of the GDPR):</p>
+          <p>Using the Website may result in the disclosure of special categories of personal data if you voluntarily choose to disclose such data. We want to emphasize that our role in this process is solely that of an intermediary. While we facilitate the Website and Services, you bear sole responsibility for your actions when using the Website and Services and the disclosure of special categories of personal data.</p>
+          <p>Furthermore, during the registration process you may be asked to indicate some of your special categories of personal data. During the registration process and in the event that you enter into a specific agreement with us (if applicable), you will be requested to give your explicit consent to the processing of such special categories of personal data, while acknowledging that you are solely responsible for making such information publicly available.</p>
+          <p>When you manifestly made your special categories of personal data publicly available (Article 9(2)(e) of the GDPR).</p>
+          <p>You further understand that by registering on our Website and providing special categories of personal data, you are making your special categories of personal data manifestly public, if the Website provides such functionality. This explicit intention to make your information manifestly public, coupled with the fact that you voluntarily provide the special categories of personal data yourself, constitutes an additional legal basis allowing the processing of such information.</p>
+          <p>Defense of legal claims (Article 9(2)(f) of the GDPR):</p>
+          <p>Your special categories of personal data will be processed where it is necessary for the establishment, exercise, or defense of legal claims.</p>
+          <p>Who we share your personal data with</p>
+          <p>We may disclose your personal data to the following parties:</p>
+          <p>Other companies which belong to the same undertaking, strictly for the purposes outlined in the Privacy Policy;</p>
+          <p>Third-party service providers. You can view the list of our third-party service providers by clicking here;</p>
+          <p>Companies which process your personal data on our behalf (the “Processors”). When doing so, we will ensure that they are bound by a contract requiring them to comply with their GDPR obligations. In some cases, our Processors might be established or run their services outside the European Economic Area. We only allow sharing of your personal data with them if they assure us of their levels of security;</p>
+          <p>Our officers, contractors and/or employees will receive access to your personal data only on a need-to-know basis;</p>
+          <p>Any law enforcement authority, if it is a matter of public importance, if a crime is committed or suspected to be committed, or if we are compelled to do so by lawful criminal, civil, or administrative process, discovery requests, subpoenas, court orders, or writs deriving from any jurisdiction;</p>
+          <p>Governmental and regulatory bodies;</p>
+          <p>Legal or other professional consultants;</p>
+          <p>We provide technology that enables you to conveniently create accounts on various third-party platforms, including from a list defined in clause 8 of this Privacy Policy. When utilizing this technology to create accounts on third party platform(s), we will share your personal information with these third parties for the purpose of facilitating registration on the third-party platform(s);</p>
+          <p>Buyers or other legal successors in the event of a merger, divestiture, restructuring, reorganization, dissolution, or other sale or transfer of some or all of our assets, whether as a going concern or as part of bankruptcy, liquidation, or similar proceeding, in which personal information held by us about our Users, Members, Verified Members, and Partners is among the assets transferred. Should such a sale or transfer occur, we will use reasonable efforts to ensure that the entity to which we transfer your personal data uses it in a manner that is consistent with this Privacy Policy.</p>
+          <p>We may also disclose aggregated information about our users, and information that does not identify any individual, without restriction. We may also share aggregated information with third parties for conducting general business analysis. This information does not contain any personal data and may be used to develop content and services that we hope you and other users will find of interest.</p>
+          <p>Members' and Verified Members’ profile information</p>
+          <p>Members and Verified Members should be aware that certain information directly provided on the Website when they create an account is public, unless stated otherwise. This may include, but is not limited to, usernames, profile pictures, and personal details. Even if a Member's or Verified Member’s profile does not contain any personal information, it could still enable identification through other information available in the Member's or Verified Member’s profile.</p>
+          <p>Members and Verified Members have full control over the information they post, upload, or showcase on the Website. They should be mindful that they are entirely responsible for any outcomes resulting from the publication of their information as certain combinations of publicly available data may lead to identification.</p>
+          <p>Privacy settings and options for modifying or deleting specific details are available to allow Members and Verified Members to manage their online presence.</p>
+          <p>Security of your personal data</p>
+          <p>We have implemented various security measures, including physical, electronic, and procedural safeguards, to protect your personal data from unauthorized access and disclosure. For example, only authorized employees are granted access to your personal data, and such access is strictly limited to permissible business functions.</p>
+          <p>Furthermore, we use encryption to secure the transmission of your personal data between your system and ours, and we use firewalls to prevent unauthorized access to your personal data. Nevertheless, it's important to note that while we implement various security measures, we cannot entirely eliminate the security risks associated with storage and transmission of personal data. For example, we cannot guarantee that our security measures will be immune to third-party hackers seeking to illegitimately obtain this information.</p>
+          <p>Always ensure the confidentiality of your unique password and account information. We do not assume responsibility for any breaches of privacy settings or security measures found on the Website.</p>
+          <p>International data transfers</p>
+          <p>As previously mentioned, certain external third parties with whom we have contractual agreements with are located outside the European Economic Area (the "EEA"). In such cases, the processing of your personal data will involve the transfer of data outside the EEA.</p>
+          <p>When transferring your data outside the EEA, we ensure an equivalent level of protection by implementing at least one of the following safeguards:</p>
+          <p>We only transfer your personal data to countries that the European Commission has deemed to provide an adequate level of protection for personal data;</p>
+          <p>When using service providers located outside the EEA, we may use specific contracts approved by the European Commission. These contracts are designed to ensure that personal data receives the same level of protection as it does within the European Union.</p>
+          <p>When using service providers located within the USA, we may transfer personal data to them if they are part of the EU-USA Data Privacy Framework. This framework requires them to provide personal data with a level of protection similar to what it receives within the European Union.</p>
+          <p>Marketing communications</p>
+          <p>If you are a Member of our Website, you may occasionally receive notifications about any similar services we offer.</p>
+          <p>You may also occasionally receive marketing communications from selected third parties about their services, if you have given your prior consent.</p>
+          <p>In both cases mentioned above, you retain the right to unsubscribe from such marketing communications at any time by clicking the link provided at the bottom of each communication. Please note that unsubscribing will not affect the delivery of essential system notifications or important account-related communications.</p>
+          <p>How long we keep your personal data for</p>
+          <p>We will keep your personal data in accordance with our retention policy for the duration required to fulfill the purposes for which it was collected for. This includes meeting any legal, accounting, or reporting obligations. In cases of complaints or if we have a reasonable belief that litigation might arise, we may retain your personal data for an extended period.</p>
+          <p>To calculate the suitable duration for keeping your personal data, we take several factors into consideration. These factors include the volume, type, and sensitivity level of the personal data, the potential risks associated with the unauthorized access or disclosure of your personal data, the purposes for processing your personal data, the feasibility of achieving these objectives through alternative means, and any relevant laws and regulations.</p>
+          <p>When there is no longer a necessity to process your personal data for the purposes outlined in this Privacy Policy, we will proceed to delete your personal data from our systems. Nevertheless, in cases where we are unable to delete it due to legal, regulatory, or technical constraints, we will ensure that your privacy remains safeguarded, and your data will be utilized solely for those specific purposes.</p>
+          <p>Your rights under the GDPR</p>
+          <p>Under the GDPR, data subjects have specific rights regarding the processing of their personal data. It is important to note that these rights are subject to certain limitations and conditions. Here is the list of the key rights granted to data subjects under the GDPR:</p>
+          <p>The right to information: You have the right to know what personal data we process and the reasons for the processing.</p>
+          <p>The right of access: You have the right to see the personal data we hold about you and to receive a copy of this information.</p>
+          <p>The right to rectification: You can request that we correct any inaccurate or incomplete personal data about you.</p>
+          <p>The right to erasure: You have the right to request the deletion of your personal data without undue delay. You can request this under certain circumstances, such as when:</p>
+          <p>We no longer need to process your personal data for the purposes it was provided for;</p>
+          <p>You wish to withdraw your consent;</p>
+          <p>You believe your personal data have been unlawfully processed;</p>
+          <p>You object to the processing, and there is no overriding legitimate ground for such processing; or</p>
+          <p>The personal data must be erased to comply with a legal obligation to which we are subject to.</p>
+          <p>The right to restriction of processing: You can request the restriction of processing of your personal data, if you believe that:</p>
+          <p>Your personal data is inaccurate;</p>
+          <p>The processing is unlawful but you do not want us to delete your personal data;</p>
+          <p>We no longer need your personal data for the purpose it was collected for but you want us to keep it for use in legal claims;</p>
+          <p>You have already objected to the processing of your personal data but you are waiting for us to confirm if we have overriding legitimate grounds to use your personal data.</p>
+          <p>The right to data portability: You have the right to receive your personal data in a format that allows you to transmit it to another controller. You can also request us to provide it directly to a third party, if technically feasible. Please be aware that we are not responsible for any third party’s use of your account information, which will be governed by their agreement with you and any privacy statement they provide to you.</p>
+          <p>The right to object: You have the right to object to our use of your personal data for our own purpose at any time. If you exercise this right, we will no longer process your personal data unless we can demonstrate compelling legitimate grounds that override your interests, rights, and freedoms or for the establishment, exercise, and defense of legal claims. This right also includes the right to object to processing your personal information for marketing and advertising purposes.</p>
+          <p>The right not to be subject to automated decision making and profiling: You have the right not to be subject to decisions based solely on automated processing, including profiling, when it has legal effects concerning you or otherwise significantly affects you.</p>
+          <p>The right to withdraw your consent: If your data is processed based on your consent, you can revoke it at any time. Please be aware that in certain cases withdrawing your consent may lead to restriction of functionalities of our Website and services.</p>
+          <p>You also have the right to lodge a complaint with the competent supervisory authority.</p>
+          <p>Important considerations:</p>
+          <p>If you choose not to provide your email address during registration (or after creating your account by editing your profile), and you subsequently forget your username or password, we will be unable to verify that the account belongs to you. As a result, you will not be able to regain access to your account, request its deletion, or exercise any other rights described herein.</p>
+          <p>Deletion requests will not affect any personal data that we are legally required to retain, whether due to laws or regulations, or if we have received a preservation request from a competent authority.</p>
+          <p>If you request the deletion of all your personal data, it will result in both the loss of access to the majority of our services and to the permanent closure of your account on our Website.</p>
+          <p>Within our services and by using your account, we offer the possibility to conveniently create accounts on various platforms with whom we have contractual relationships, as described in clause 8 of this Privacy Policy. If you have created one or more accounts on third party platforms using the technology described above and wish to delete your account from our Website, you will also lose access to the services provided by those third parties (if applicable). In other words, if we delete your personal data and account on our Website, you will also lose access to services provided by such third party(ies) and any subscriptions or purchases made on such third party(ies) platforms (if applicable).</p>
+          <p>To fulfill your request, we may need to request additional information from you to verify your identity. This is a security measure to ensure that we are acting upon the request of the correct natural person and in order to protect the privacy and security of your personal data.</p>
+          <p>We will address your request regarding your rights within a maximum period of thirty (30) days, taking into account the specific circumstances and complexity of the request. Please note that this period may be extended by two (2) further months where necessary, taking into account the complexity and number of the requests.</p>
+          <p>If you wish to exercise any of your rights or if you have any questions regarding the use of your personal data, please contact us through our Contact us/Single point of contact and select the 'Privacy/GDPR Requests' option.</p>
+          <p>How to access or modify your personal data</p>
+          <p>You have the ability to access or make changes to the personal data associated with your account. This includes:</p>
+          <p>Our policy towards minors</p>
+          <p>Our Website is intended for use by individuals who are at least eighteen (18) years old or have reached the age of majority as defined by the jurisdiction from which they access the Website, whichever is higher. We do not knowingly collect any personal data from individuals who are considered minors.</p>
+          <p>If you become aware that a minor has attempted to provide us with their personal data in any way, please contact us through our Contact us/Single point of contact, select the 'Report Violation of Our Rules’ option and then select the ‘Personal Data / Privacy Violation’ option, and we will take immediate action to delete such information.</p>
+          <p>Cookies</p>
+          <p>Our Website uses small data files, commonly known as cookies, to enhance its functionality and improve your browsing experience. For more information on how we use cookies, please refer to our cookie policy, available at https://hiresweetheart.co.ke/cookie-policy.</p>
+          <p>Third-party links</p>
+          <p>Our Website may include links to third-party websites, pop-ups, plug-ins, and applications. Clicking such links or enabling those connections may allow third parties to collect or share data about you. We do not control these third-party websites and we are not responsible for their privacy policies. We specifically disclaim any responsibility for their content, privacy practices, and terms of use, and we make no endorsements nor any representations about their accuracy, content, or thoroughness. When leaving our Website, we encourage you to carefully read the privacy policy of every website you visit.</p>
+          <p>Notice regarding the California Consumer Privacy Act</p>
+          <p>As of January 1st, 2020, the California Consumer Privacy Act of 2018 (the "CCPA") provides certain rights to California residents (the "Consumers") regarding their personal information, as defined under the CCPA. In addition to the rights outlined in this Privacy Policy, and subject to the CCPA’s exceptions, Consumers have the following rights:</p>
+          <p>The right to receive information about our collection and use of their personal information.</p>
+          <p>The right to request the deletion of certain personal information we have collected from them.</p>
+          <p>The right to opt-out of the sale or sharing of their personal information;</p>
+          <p>The right to non-discrimination for exercising your CCPA rights. We will not deny California residents access to our services, nor will we provide different levels or qualities of service based on the exercise of their CCPA rights, except as permitted by the CCPA.</p>
+          <p>The right to correct inaccurate personal information we have about you;</p>
+          <p>The right to limit the use and disclosure of sensitive personal information collected about you.</p>
+          <p>You also have the ability to designate an agent to exercise your CCPA rights, provided that a duly executed notarized power of attorney is provided and that the agent possesses sufficient information for us to verify the Consumer’s identity and locate their personal information within our systems.</p>
+          <p>This Website has not sold personal information to third parties for monetary or other valuable considerations in the past twelve (12) months. We respect the right of California residents to opt out of the sharing or selling their personal information. If you are subject to the CCPA and wish to communicate this choice, please contact us through our Contact us/Single point of contact and select the 'Privacy/GDPR Requests' option.</p>
+          <p>Notice regarding the Digital Millennium Copyright Act</p>
+          <p>In compliance with the Digital Millennium Copyright Act (the “DMCA”), we have established a policy regarding the handling of DMCA notices and counter-notices.</p>
+          <p>Receipt of DMCA Notices: If we receive a valid DMCA notice alleging copyright infringement, then the DMCA notice (and any personal data contained therein) will be provided to the individual or legal entity that uploaded the allegedly infringing material.</p>
+          <p>Receipt of DMCA Counter-Notices: Likewise, if we receive a valid DMCA counter-notice in response to a DMCA notice, then the DMCA counter-notice (and any personal data contained therein) will be provided to the individual or legal entity that issued the original DMCA notice.</p>
+          <p>Your right to lodge a complaint</p>
+          <p>If you have any questions about this Privacy Policy or would like to lodge a complaint regarding the Company's use of your personal data, you may contact us through our Contact us/Single point of contact and select the 'Privacy/GDPR Requests' option. Once we receive your complaint, we will investigate and provide you with a response within a reasonable timeframe.</p>
+          <p>You also have the right to lodge a complaint to the data protection supervisory authority of your country of residence, provided that it is a Member State of the European Union or located within the EEA.</p>
+          <p>Changes to this Privacy Policy</p>
+          <p>We reserve the right to update, revise, amend or modify this Privacy Policy as necessary to reflect any changes in our data processing practices or evolving legal requirements.</p>
+          <p>While we will make every effort to notify you of significant changes to this Privacy Policy, we encourage you to periodically review the most current version available at https://hiresweetheart.co.ke/privacy to stay informed of any changes. The date of the latest version of the Privacy Policy will be displayed at the top of this page.</p>
+        </div>
+
+        <div className="mt-8 flex gap-4">
+          <Button variant="default" onClick={handleAgree}>
+            Agree
+          </Button>
+          <Button variant="destructive" onClick={handleDisagree}>
+            Disagree
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
