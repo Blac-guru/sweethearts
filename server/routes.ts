@@ -73,7 +73,8 @@ export function applyRoutes(app: Express) {
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const hostname =
-        process.env.CLIENT_BASE_URL || "https://hiresweetheart.co.ke";
+        process.env.CLIENT_BASE_URL ||
+        "https://sweetheart-next-door.vercel.app";
       const smStream = new SitemapStream({ hostname });
 
       // pipe sitemap -> gzip -> response

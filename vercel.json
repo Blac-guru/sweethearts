@@ -5,7 +5,7 @@
     { "src": "dist/public/**/*", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/[...all].ts" },
+    { "src": "/api/(.*)", "dest": "/api/index.ts" },
     { "src": "/sitemap.xml", "dest": "/api/sitemap.ts" },
 
     { "src": "/assets/(.*)", "dest": "/dist/public/assets/$1" },
