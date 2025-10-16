@@ -15,12 +15,12 @@ export default function Footer() {
                 className="h-8 w-8 object-contain"
               />
               <span className="text-lg font-bold text-primary">
-                My Sweetheart Next Door
+                Sweetheart Next Door
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
               A safe and professional platform for adults to connect, book
-              services, and explore opportunities. 
+              services, and explore opportunities.
             </p>
           </div>
 

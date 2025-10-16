@@ -51,11 +51,11 @@ export default function Navbar() {
                   className="h-8 w-8 object-contain block sm:hidden"
                 />
                 <h3
-                    className="text-xs font-bold text-primary sm:hidden"
-                    data-testid="logo"
-                  >
-                    My Sweetheart Next Door
-                  </h3>
+                  className="text-xs font-bold text-primary sm:hidden"
+                  data-testid="logo"
+                >
+                  Sweetheart Next Door
+                </h3>
 
                 {/* Desktop: logo + text */}
                 <div className="hidden sm:flex items-center gap-2">

@@ -260,7 +260,7 @@ export default function RegistrationPage() {
             className="text-3xl font-bold text-foreground"
             data-testid="registration-title"
           >
-            Join My Sweetheart Next Door
+            Join Sweetheart Next Door
           </h1>
           <p
             className="text-muted-foreground mt-2"
