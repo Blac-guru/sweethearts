@@ -1,7 +1,7 @@
 // api/sitemap.ts
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { storage } from "../server/storage.js";
-import { toDateSafe } from "../server/utils/dates.js"; // ✅ helper
+import { storage } from "./storage.js";
+import { toDateSafe } from "./dates.js"; // ✅ helper
 
 // Format date as YYYY-MM-DD (Google-safe, no milliseconds)
 function formatLastMod(date: Date): string {
