@@ -4,6 +4,8 @@ import { createServer } from "http";
 import express from "express";
 import multer from "multer";
 import crypto from "crypto";
+import { SitemapStream } from "sitemap";
+import { createGzip } from "zlib";
 
 import { storage } from "./storage.js";
 import {
@@ -67,6 +69,52 @@ const upload = multer({
 });
 
 export function applyRoutes(app: Express) {
+  // route - /sitemap.xml
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const hostname =
+        process.env.CLIENT_BASE_URL || "https://hiresweetheart.co.ke";
+      const smStream = new SitemapStream({ hostname });
+
+      // pipe sitemap -> gzip -> response
+      res.writeHead(200, {
+        "Content-Type": "application/xml",
+        "Content-Encoding": "gzip",
+      });
+      const pipeline = smStream.pipe(createGzip());
+      pipeline.pipe(res);
+
+      // add static pages (adjust changefreq/priority as you like)
+      const staticPages = [
+        { url: "/", changefreq: "daily", priority: 1.0 },
+        { url: "/register", changefreq: "daily", priority: 0.9 },
+        { url: "/register/details", changefreq: "daily", priority: 0.9 },
+        { url: "/contact", changefreq: "monthly", priority: 0.5 },
+        { url: "/terms", changefreq: "yearly", priority: 0.2 },
+        { url: "/privacy", changefreq: "yearly", priority: 0.2 },
+        { url: "/parental", changefreq: "yearly", priority: 0.2 },
+        { url: "/cookies", changefreq: "yearly", priority: 0.2 },
+      ];
+      for (const p of staticPages) smStream.write(p);
+
+      // hairdressers from storage helper
+      const items = await storage.getAllHairdressersForSitemap();
+      for (const hd of items) {
+        smStream.write({
+          url: `/profile/${hd.id}`,
+          changefreq: "daily",
+          priority: hd.membershipPlan === "VIP" ? 0.9 : 0.7,
+          lastmod: hd.updatedAt.toISOString(),
+        } as any); // cast because some sitemap types are strict
+      }
+
+      smStream.end();
+    } catch (err) {
+      console.error("Failed to generate sitemap:", err);
+      res.status(500).end();
+    }
+  });
+
   // ---------------- LOCATIONS ----------------
 
   app.get("/api/towns", async (_req, res) => {

@@ -66,6 +66,15 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
+  getAllHairdressersForSitemap(): Promise<
+    {
+      id: string;
+      updatedAt: Date;
+      membershipPlan?: string;
+      fullName?: string;
+    }[]
+  >;
+
   // Locations
   getTowns(): Promise<SchemaTown[]>;
   getEstatesByTown(townId: number): Promise<SchemaEstate[]>;
