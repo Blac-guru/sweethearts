@@ -68,7 +68,7 @@ export default function Navbar() {
                     className="text-xl font-bold text-primary"
                     data-testid="logo"
                   >
-                    My Sweetheart Next Door
+                    Sweetheart Next Door
                   </h1>
                 </div>
               </div>
