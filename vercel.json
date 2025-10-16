@@ -1,26 +1,16 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/index.ts", "use": "@vercel/node" },
-    { "src": "api/sitemap.ts", "use": "@vercel/node" },
-    { "src": "dist/public/**", "use": "@vercel/static" }
+    { "src": "api/**/*.ts", "use": "@vercel/node" },
+    { "src": "dist/public/**/*", "use": "@vercel/static" }
   ],
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.ts" },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap.ts" },
-    { "source": "/(.*)", "destination": "/dist/public/index.html" }
-  ],
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "hiresweetheart.co.ke"
-        }
-      ],
-      "destination": "https://www.hiresweetheart.co.ke/:path*",
-      "permanent": true
-    }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/[...all].ts" },
+    { "src": "/sitemap.xml", "dest": "/api/sitemap.ts" },
+
+    { "src": "/assets/(.*)", "dest": "/dist/public/assets/$1" },
+    { "src": "/hearts.png", "dest": "/dist/public/hearts.png" },
+
+    { "src": "/(.*)", "dest": "/dist/public/index.html" }
   ]
 }
