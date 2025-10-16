@@ -31,6 +31,8 @@ import { z } from "zod";
 import { globalToken } from "./setup-account.jsx";
 import { useAuthStore } from "@/store/useAuthStore.js";
 import { Checkbox } from "@/components/ui/checkbox.jsx";
+import ServicesDropdown from "@/components/select-services.jsx";
+import { getAuth } from "firebase/auth";
 
 const formSchema = insertHairdresserSchema.extend({
   profilePhoto: z.any().optional(),
@@ -48,7 +50,7 @@ export default function RegistrationPage() {
   const [estate, setEstate] = useState("all");
   const [subEstate, setSubEstate] = useState("all");
   const [isAdult, setIsAdult] = useState<boolean | null>(null);
-  const [termsAccepted, setTermsAccepted] = useState(false); 
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Track selected membership and monthly amount
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export default function RegistrationPage() {
   });
 
   localStorage.setItem("isAdult", "true");
-    localStorage.setItem("termsAgreed", "true");
+  localStorage.setItem("termsAgreed", "true");
 
   // 🔹 All Towns
   // Towns list
@@ -114,6 +116,10 @@ export default function RegistrationPage() {
     mutationFn: async (data: FormData) => {
       const formData = new FormData();
 
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user?.uid) throw new Error("Not authenticated.");
+
       // Text fields
       if (data.fullName) {
         formData.append("fullName", data.fullName);
@@ -138,6 +144,7 @@ export default function RegistrationPage() {
       formData.append("estateId", String(data.estateId));
       formData.append("subEstateId", String(data.subEstateId));
       formData.append("membershipPlan", String(data.membershipPlan));
+      formData.append("firebaseUid", user.uid);
 
       // Services array
       data.services.forEach((service) => {
@@ -253,7 +260,7 @@ export default function RegistrationPage() {
             className="text-3xl font-bold text-foreground"
             data-testid="registration-title"
           >
-            Join SweetHeart.com
+            Join My Sweetheart Next Door
           </h1>
           <p
             className="text-muted-foreground mt-2"
@@ -583,43 +590,33 @@ export default function RegistrationPage() {
                 </div>
 
                 {/* Services Offered */}
-                                <div>
-                                  <h2 className="text-lg font-semibold text-foreground mb-4">
-                                    Services Offered *
-                                  </h2>
-                                  <div
-                                    className="grid grid-cols-2 md:grid-cols-3 gap-3"
-                                    data-testid="services-checkboxes"
-                                  >
-                                    {HAIR_SERVICES.map((service) => (
-                                      <div
-                                        key={service}
-                                        className="flex items-center space-x-2"
-                                      >
-                                        <Checkbox
-                                          id={service}
-                                          onCheckedChange={(checked) =>
-                                            handleServiceChange(service, checked as boolean)
-                                          }
-                                          data-testid={`checkbox-service-${service
-                                            .toLowerCase()
-                                            .replace(/\s+/g, "-")}`}
-                                        />
-                                        <label
-                                          htmlFor={service}
-                                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                        >
-                                          {service}
-                                        </label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {form.formState.errors.services && (
-                                    <p className="text-sm text-destructive mt-2">
-                                      At least one service is required
-                                    </p>
-                                  )}
-                                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground mb-4">
+                    Services Offered *
+                  </h2>
+                  <FormField
+                    control={form.control}
+                    name="services"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Services Offered *</FormLabel>
+                        <FormControl>
+                          <ServicesDropdown
+                            value={field.value || []}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.formState.errors.services && (
+                    <p className="text-sm text-destructive mt-2">
+                      At least one service is required
+                    </p>
+                  )}
+                </div>
 
                 {/* Membership Selection */}
                 <div>
@@ -811,12 +808,35 @@ export default function RegistrationPage() {
                   </div>
                 </div>
 
+                {/* Terms & Conditions */}
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="terms"
+                    checked={termsAccepted}
+                    onCheckedChange={(val) => setTermsAccepted(Boolean(val))}
+                  />
+                  <label htmlFor="terms" className="text-sm leading-tight">
+                    I have read and agree to the{" "}
+                    <a
+                      href="/terms-and-conditions"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline"
+                    >
+                      Terms & Conditions
+                    </a>
+                    .
+                  </label>
+                </div>
+
                 {/* Submit Button */}
                 <div className="pt-6">
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={registerMutation.isPending}
+                    disabled={
+                      registerMutation.isPending || !isAdult || !termsAccepted
+                    }
                     data-testid="button-register"
                   >
                     {registerMutation.isPending ? (

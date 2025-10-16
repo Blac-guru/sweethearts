@@ -6,6 +6,7 @@ import {
   type HairdresserWithLocation,
   Blog,
   InsertBlog,
+  Verification,
 } from "@shared/schema.js";
 import bcrypt from "bcrypt";
 
@@ -75,7 +76,12 @@ export interface IStorage {
   getHairdresser(id: string): Promise<HairdresserWithLocation | undefined>;
   getAllHairdressers(): Promise<HairdresserWithLocation[]>;
   getAllHairdressersForSitemap(): Promise<
-    { id: string; updatedAt: Date; membershipPlan?: string; fullName?: string }[]
+    {
+      id: string;
+      updatedAt: Date;
+      membershipPlan?: string;
+      fullName?: string;
+    }[]
   >;
   searchHairdressers(filters: {
     townId?: number;
@@ -211,7 +217,7 @@ export class FirestoreStorage implements IStorage {
     });
   }
 
-    async uploadVerificationFile(
+  async uploadVerificationFile(
     file: Express.Multer.File,
     folder = "hairdresser-connect/verification"
   ): Promise<string> {
@@ -226,7 +232,6 @@ export class FirestoreStorage implements IStorage {
       stream.end(file.buffer);
     });
   }
-
 
   /* ---------- USERS ---------- */
   async getUser(id: string): Promise<User | undefined> {
@@ -334,6 +339,18 @@ export class FirestoreStorage implements IStorage {
         break;
     }
 
+    // ✅ Default verification object (always present)
+    const defaultVerification: Verification = {
+      country: null,
+      idType: null,
+      idNumber: null,
+      idFront: null,
+      idBack: null,
+      selfie: null,
+      status: "pending",
+      submittedAt: null,
+    };
+
     const hairdresserData: Omit<Hairdresser, "id"> = {
       ...insertHairdresser,
       services,
@@ -351,6 +368,10 @@ export class FirestoreStorage implements IStorage {
       nextPaymentFee,
       registrationFee: 500,
       firebaseUid: insertHairdresser.firebaseUid,
+
+      // ✅ Always initialize verification properly
+      verification: insertHairdresser.verification ?? defaultVerification,
+      isVerified: false,
     };
 
     const docRef = db.collection("sweethearts").doc();
@@ -416,12 +437,16 @@ export class FirestoreStorage implements IStorage {
   async getHairdresserByUid(
     uid: string
   ): Promise<HairdresserWithLocation | undefined> {
+    const cleanUid = String(uid).trim();
     const snapshot = await this.sweetheartsCollection
-      .where("firebaseUid", "==", uid)
+      .where("firebaseUid", "==", cleanUid)
       .limit(1)
       .get();
 
-    if (snapshot.empty) return undefined;
+    if (snapshot.empty) {
+      console.warn(`No hairdresser found for UID: ${cleanUid}`);
+      return undefined;
+    }
 
     const doc = snapshot.docs[0];
     const rawData = doc.data() as Hairdresser;
@@ -435,15 +460,62 @@ export class FirestoreStorage implements IStorage {
     return hd;
   }
 
-  async updateHairdresser(id: string, data: Partial<Hairdresser>): Promise<Hairdresser> {
-  const ref = db.collection("hairdressers").doc(id);
-  await ref.update(data);
-  const snapshot = await ref.get();
-  return snapshot.data() as Hairdresser;
-}
+  // in FirestoreStorage class
+  // inside FirestoreStorage class
+  async updateHairdresser(
+    id: string,
+    data: Partial<Hairdresser>
+  ): Promise<Hairdresser> {
+    const docRef = this.sweetheartsCollection.doc(id);
+    const snapshotBefore = await docRef.get();
 
+    if (!snapshotBefore.exists) {
+      throw new Error("Hairdresser not found before update");
+    }
 
-    async updateHairdresserVerification(
+    const existingData = snapshotBefore.data() as Partial<Hairdresser>;
+
+    const shouldInitializeVerification =
+      existingData.isVerified === undefined && data.isVerified === undefined;
+
+    const dataToUpdate = {
+      ...data,
+      ...(shouldInitializeVerification ? { isVerified: false } : {}),
+      updatedAt: new Date(),
+    };
+
+    // ✅ Use set with merge to avoid overwriting nested fields like verification
+    await docRef.set(dataToUpdate, { merge: true });
+
+    // Fetch updated document
+    const snapshot = await docRef.get();
+    if (!snapshot.exists) throw new Error("Hairdresser not found after update");
+
+    const raw = snapshot.data() as any;
+
+    const createdAt =
+      raw.createdAt instanceof Date
+        ? raw.createdAt
+        : raw.createdAt
+        ? new Date(raw.createdAt)
+        : new Date();
+
+    const updatedAt =
+      raw.updatedAt instanceof Date
+        ? raw.updatedAt
+        : raw.updatedAt
+        ? new Date(raw.updatedAt)
+        : undefined;
+
+    return {
+      ...(raw as Hairdresser),
+      id: snapshot.id,
+      createdAt,
+      updatedAt,
+    } as Hairdresser;
+  }
+
+  async updateHairdresserVerification(
     id: string,
     data: {
       country?: string;
@@ -464,31 +536,41 @@ export class FirestoreStorage implements IStorage {
     await docRef.set(updateData, { merge: true });
   }
 
-
   async getAllHairdressers(): Promise<HairdresserWithLocation[]> {
     const snapshot = await this.sweetheartsCollection
       .where("isPaid", "==", true) // ✅ only fetch paid users
       .get();
 
-    const hairdressers: Hairdresser[] = snapshot.docs.map(
-      (doc: any) =>
-        ({
-          ...doc.data(),
-          id: doc.id,
-        } as Hairdresser)
-    );
+    // Map and filter logic handled in code (not Firestore query)
+    const hairdressers: Hairdresser[] = snapshot.docs
+      .map((doc: any) => ({
+        ...doc.data(),
+        id: doc.id,
+      }))
+      // ✅ Only show verified OR legacy profiles (no isVerified field)
+      .filter((hairdresser: any) => {
+        // If isVerified is undefined → assume old user → include
+        if (hairdresser.isVerified === undefined) return true;
+        // Include only verified ones
+        return hairdresser.isVerified === true;
+      });
 
     return this.addLocationData(hairdressers);
   }
 
-    /**
+  /**
    * Get all hairdressers (paid only) for sitemap generation
    * Returns only essential fields to keep sitemap lean
    */
   // inside FirestoreStorage class
 
   async getAllHairdressersForSitemap(): Promise<
-    { id: string; updatedAt: Date; membershipPlan?: string; fullName?: string }[]
+    {
+      id: string;
+      updatedAt: Date;
+      membershipPlan?: string;
+      fullName?: string;
+    }[]
   > {
     const snapshot = await this.sweetheartsCollection
       .where("isPaid", "==", true) // include only paid profiles that are visible
@@ -498,25 +580,22 @@ export class FirestoreStorage implements IStorage {
       const d = doc.data() as any;
 
       // prefer an explicit updatedAt if present; otherwise fallback to paymentDate, createdAt
-      const updatedAt =
-        d.updatedAt
-          ? new Date(d.updatedAt)
-          : d.paymentDate
-          ? new Date(d.paymentDate)
-          : d.createdAt
-          ? new Date(d.createdAt)
-          : new Date();
+      const updatedAt = d.updatedAt
+        ? new Date(d.updatedAt)
+        : d.paymentDate
+        ? new Date(d.paymentDate)
+        : d.createdAt
+        ? new Date(d.createdAt)
+        : new Date();
 
       return {
         id: doc.id,
         updatedAt,
-        membershipPlan: (d.membershipPlan || undefined),
+        membershipPlan: d.membershipPlan || undefined,
         fullName: d.fullName || d.nickName || undefined,
       };
     });
   }
-
-
 
   private async addLocationData(
     hairdressers: Hairdresser[]

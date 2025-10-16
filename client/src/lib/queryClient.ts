@@ -7,34 +7,39 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// src/lib/queryClient.ts
 export async function apiRequest(
   method: string,
-  url: string,
-  data?: unknown | undefined,
-  token?: string,
+  path: string,
+  body?: any,
+  token?: string
 ): Promise<Response> {
-  const options: RequestInit = {
-    method,
-    credentials: "include",
-    headers: {
-      "ngrok-skip-browswer-warning": "true", // ✅ keep this always
-    },
-  };
+  const headers: Record<string, string> = {};
 
-  if (data instanceof FormData) {
-    // Let the browser set Content-Type with boundary
-    options.body = data;
-  } else if (data !== undefined) {
-    options.headers = {
-      ...options.headers,
-      "Content-Type": "application/json",
-    };
-    options.body = JSON.stringify(data);
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, options);
-  await throwIfResNotOk(res);
-  return res;
+  // Only attach Content-Type if we will send JSON (not FormData)
+  const isFormData = body instanceof FormData;
+
+  const opts: RequestInit = {
+    method,
+    headers,
+  };
+
+  // Attach body only for non-GET/HEAD methods
+  if (method !== "GET" && method !== "HEAD" && typeof body !== "undefined") {
+    if (isFormData) {
+      // For FormData do not set Content-Type (browser sets boundary)
+      opts.body = body;
+    } else {
+      headers["Content-Type"] = "application/json";
+      opts.body = typeof body === "string" ? body : JSON.stringify(body);
+    }
+  }
+
+  return fetch(path, opts);
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

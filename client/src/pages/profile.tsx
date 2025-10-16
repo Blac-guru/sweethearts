@@ -11,6 +11,7 @@ import {
   MapPin,
   Mail,
   Eye,
+  ShieldAlert,
 } from "lucide-react";
 import { Link } from "wouter";
 import Navbar from "@/components/navbar.jsx";
@@ -151,7 +152,8 @@ export default function ProfilePage() {
           {/* Profile Header */}
           <div className="relative bg-gradient-to-r from-primary to-primary/80 text-white p-8">
             <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
-              <div className="relative">
+              {/* Image wrapper: prevent shrinking so it always stays circular */}
+              <div className="relative flex-shrink-0">
                 <img
                   src={profileImageUrl}
                   alt={hairdresser.nickName}
@@ -183,7 +185,8 @@ export default function ProfilePage() {
                 })()}
               </div>
 
-              <div className="text-center md:text-left">
+              {/* Text column */}
+              <div className="text-center md:text-left flex-1">
                 <h1
                   className="text-3xl font-bold mb-2"
                   data-testid="text-nickname"
@@ -196,9 +199,11 @@ export default function ProfilePage() {
                 >
                   {hairdresser.gender}
                 </p>
-                <p className="text-lg opacity-90 mb-8" data-testid="text-age">
+                <p className="text-lg opacity-90 mb-4" data-testid="text-age">
                   Age: <b>{hairdresser.age}</b>
                 </p>
+
+                {/* Paid badge */}
                 {user?.uid === hairdresser.firebaseUid && (
                   <div className="mt-2">
                     {hairdresser.isPaid ? (
@@ -211,6 +216,27 @@ export default function ProfilePage() {
                   </div>
                 )}
 
+                {/* Verification Pending card — compact, won't push image */}
+                {user?.uid === hairdresser.firebaseUid &&
+                  !hairdresser.isVerified && (
+                    <div className="mt-4">
+                      <div className="inline-flex items-start gap-3 bg-yellow-50 border border-yellow-300 text-yellow-800 p-3 rounded-lg shadow-sm max-w-xl">
+                        <ShieldAlert className="h-6 w-6 text-yellow-600 flex-shrink-0" />
+                        <div>
+                          <div className="font-semibold">
+                            Verification Pending
+                          </div>
+                          <p className="text-sm opacity-90 max-w-xl">
+                            Your profile is currently being reviewed by our
+                            security team. It will be visible publicly once
+                            verified. Usually completes within a short while.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                {/* Views card */}
                 {user?.uid === hairdresser.firebaseUid && (
                   <div className="mt-4 flex items-center justify-center md:justify-start">
                     <Card className="bg-white text-foreground shadow-sm">
@@ -227,14 +253,15 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                <p className="opacity-80 mb-4 flex items-center justify-center md:justify-start">
+                <p className="opacity-80 mt-4 flex items-center justify-center md:justify-start">
                   <MapPin className="w-4 h-4 mr-2" />
                   <span data-testid="text-location">
                     {hairdresser.subEstate.name}, {hairdresser.estate.name},{" "}
                     {hairdresser.town.name}
                   </span>
                 </p>
-                <div className="flex justify-center md:justify-start space-x-4">
+
+                <div className="flex justify-center md:justify-start space-x-4 mt-4">
                   <a
                     href={`tel:${hairdresser.phoneNumber}`}
                     className="bg-white text-primary px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors inline-flex items-center"
@@ -243,6 +270,7 @@ export default function ProfilePage() {
                     <Phone className="w-4 h-4 mr-2" />
                     Call Now
                   </a>
+
                   <a
                     href={`https://wa.me/${whatsappNumber.replace(
                       /[^0-9]/g,
@@ -260,7 +288,6 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-
           {/* Profile Details */}
           <CardContent className="p-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

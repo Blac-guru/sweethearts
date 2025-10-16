@@ -33,8 +33,8 @@ import { Loader2 } from "lucide-react";
 
 export let globalToken = "";
 
-// ✅ Schema with confirmPassword
-const schema = z
+// ✅ Separate schemas for login and signup
+const signupSchema = z
   .object({
     username: z.string().email("Must be a valid email"),
     password: z.string().min(6, "Password must be at least 6 characters"),
@@ -45,7 +45,10 @@ const schema = z
     path: ["confirmPassword"],
   });
 
-type FormData = z.infer<typeof schema>;
+const loginSchema = z.object({
+  username: z.string().email("Must be a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
 
 const SLIDES = [
   {
@@ -59,33 +62,66 @@ const SLIDES = [
     image:
       "https://afroculture.net/wp-content/uploads/2016/12/0lbstdR9J1t9yyrpo1_500.jpg",
     title: "Beyond Companionship",
-    subtitle: "Discover massage therapists, tour guides, and lifestyle partners.",
+    subtitle:
+      "Discover massage therapists, tour guides, and lifestyle partners.",
   },
   {
     image:
       "https://cdn.shopify.com/s/files/1/0293/9277/files/03-25-25_Swim-Set-1_48_B25127_Yellow_ZSR_TK_JR_13-39-35_19481_SG.jpg?v=1743101159&width=1200&height=627",
     title: "Tailored For You",
-    subtitle: "Find connections that match your needs — casual or professional.",
+    subtitle:
+      "Find connections that match your needs — casual or professional.",
   },
 ];
-
 
 export default function SetupAccountPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [isLogin, setIsLogin] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(schema),
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        const rsp = await apiRequest(
+          "GET",
+          `/api/hairdressers/me`,
+          undefined,
+          token
+        );
+        if (rsp.ok) {
+          const userData = await rsp.json();
+          if (userData?.id) {
+            setLocation(`/profile/${userData.id}`);
+          }
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Dynamically switch form schema based on mode
+  const form = useForm({
+    resolver: zodResolver(isLogin ? loginSchema : signupSchema),
     defaultValues: { username: "", password: "", confirmPassword: "" },
     mode: "onChange",
   });
 
-  const [loading, setLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
+  // Reset form errors when switching modes
+  useEffect(() => {
+    form.reset(
+      {
+        username: form.getValues("username") || "",
+        password: "",
+        confirmPassword: "",
+      },
+      { keepValues: true }
+    );
+  }, [isLogin]);
 
-  // Slideshow state
+  // Slideshow logic
   const [currentSlide, setCurrentSlide] = useState(0);
-
   useEffect(() => {
     const iv = setInterval(() => {
       setCurrentSlide((s) => (s + 1) % SLIDES.length);
@@ -93,39 +129,58 @@ export default function SetupAccountPage() {
     return () => clearInterval(iv);
   }, []);
 
-  // Watch fields for validation
-  const password = form.watch("password");
-  const confirmPassword = form.watch("confirmPassword");
-  const passwordsMatch = isLogin || password === confirmPassword;
-
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: any) => {
     setLoading(true);
     try {
       let userCred;
 
       if (isLogin) {
-        // Login flow
+        // LOGIN FLOW
         userCred = await signInWithEmailAndPassword(
           auth,
           data.username,
           data.password
         );
+
         toast({
           title: "Welcome back!",
           description: "You are now logged in.",
         });
 
+        // Temporary fallback redirect after login
+        setLocation("/");
+        return;
+
         const token = await userCred.user.getIdToken();
-        const rsp = await apiRequest("GET", `/api/hairdressers/me`, {}, token);
+
+        // ✅ Fix: no body for GET request
+        const rsp = await apiRequest(
+          "GET",
+          `/api/hairdressers/me`,
+          undefined,
+          token
+        );
+
+        if (!rsp.ok) {
+          // If no existing profile found, go to register
+          console.warn(
+            "User has no hairdresser profile, redirecting to registration"
+          );
+          setLocation("/register/details");
+          return;
+        }
+
         const userData = await rsp.json();
 
+        // ✅ If user already has a profile
         if (userData?.id) {
           setLocation(`/profile/${userData.id}`);
         } else {
+          // Otherwise, prompt them to complete setup
           setLocation("/register/details");
         }
       } else {
-        // Signup flow
+        // SIGNUP FLOW
         userCred = await createUserWithEmailAndPassword(
           auth,
           data.username,
@@ -139,7 +194,6 @@ export default function SetupAccountPage() {
         });
 
         globalToken = await userCred.user.getIdToken();
-
         setLocation("/register/details");
       }
     } catch (err: any) {
@@ -169,13 +223,12 @@ export default function SetupAccountPage() {
             transition={{ duration: 1.2 }}
           />
         </AnimatePresence>
-        {/* overlay */}
         <div className="absolute inset-0 bg-black/50"></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 grid md:grid-cols-2 gap-8 items-center">
-        {/* Left: form */}
+        {/* Form Section */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -189,7 +242,10 @@ export default function SetupAccountPage() {
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
                   {/* Email */}
                   <FormField
                     control={form.control}
@@ -229,7 +285,7 @@ export default function SetupAccountPage() {
                     )}
                   />
 
-                  {/* Confirm Password (only in signup) */}
+                  {/* Confirm Password (Signup only) */}
                   {!isLogin && (
                     <FormField
                       control={form.control}
@@ -253,13 +309,11 @@ export default function SetupAccountPage() {
                     />
                   )}
 
-                  {/* Submit */}
+                  {/* Submit Button */}
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={
-                      loading || !form.formState.isValid || !passwordsMatch
-                    }
+                    disabled={loading || !form.formState.isValid}
                   >
                     {loading ? (
                       <span className="inline-flex items-center">
@@ -275,7 +329,7 @@ export default function SetupAccountPage() {
                 </form>
               </Form>
 
-              {/* Switch mode */}
+              {/* Switch Mode */}
               <div className="mt-3 text-sm text-white">
                 {isLogin ? (
                   <>
@@ -303,26 +357,25 @@ export default function SetupAccountPage() {
           </Card>
         </motion.div>
 
-        {/* Right: slide text */}
-<div className="text-right text-white drop-shadow-lg">
-  <AnimatePresence mode="wait">
-    <motion.div
-      key={currentSlide}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.8 }}
-    >
-      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-        {SLIDES[currentSlide].title}
-      </h1>
-      <p className="text-lg sm:text-xl md:text-2xl opacity-90">
-        {SLIDES[currentSlide].subtitle}
-      </p>
-    </motion.div>
-  </AnimatePresence>
-</div>
-
+        {/* Slide Text */}
+        <div className="text-right text-white drop-shadow-lg">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.8 }}
+            >
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+                {SLIDES[currentSlide].title}
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl opacity-90">
+                {SLIDES[currentSlide].subtitle}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

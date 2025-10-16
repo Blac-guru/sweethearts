@@ -30,24 +30,24 @@ export interface LocationsData {
 }
 
 export const HAIR_SERVICES = [
-  "Raw BJ",
-  "BJ",
-  "COB(Cum On Body)",
-  "COF(Cum On Face)",
-  "Cum In Mouth",
-  "ThreeSome",
-  "Raw Pussy",
-  "Cum On Tits",
-  "OWC(Oral Without Condom)",
+  "Girlfriend experience",
+  "Dinner Date",
+  "Trip partner",
+  "Massage",
+  "Lesbian Show",
+  "Rimming",
+  "Blow job",
+  "3 Some",
 ];
 
 export const ORIENTATIONS = [
   "Straight",
   "Lesbian",
   "Bisexual",
-  "Transexual",
+  "Transgender",
   "Asexual",
   "BDSM",
+  "Gay",
 ];
 
 export const KENYA_LOCATIONS: LocationsData[] = [

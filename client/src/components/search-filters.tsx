@@ -50,8 +50,6 @@ const SLIDES = [
   },
 ];
 
-
-
 export default function SearchFilters({ onSearch }: SearchFiltersProps) {
   const [town, setTown] = useState("all");
   const [estate, setEstate] = useState("all");
@@ -157,7 +155,10 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
     search.trim().length > 0;
 
   return (
-    <div ref={filterRef} className="relative min-h-[80vh] md:min-h-screen flex items-center overflow-hidden">
+    <div
+      ref={filterRef}
+      className="relative min-h-[80vh] md:min-h-screen flex items-center overflow-hidden"
+    >
       {/* Background slideshow */}
       <div className="absolute inset-0">
         <AnimatePresence mode="wait">
@@ -175,11 +176,11 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
       </div>
 
       {/* Content on top */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-10 md:py-20 w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-10 md:py-20 w-full grid grid-cols-2 md:grid-cols-2 gap-2 items-center">
         {/* Filters Box */}
-        <div className="bg-white/15 backdrop-blur-md rounded-2xl shadow-2xl p-4 md:p-6 w-full">
+        <div className="bg-white/15 grid backdrop-blur-md rounded-2xl shadow-2xl p-4 md:p-6 w-full">
           {/* Town Dropdown */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
             <div className="space-y-1 sm:space-y-2 text-black">
               <Label>Town</Label>
               <Select
@@ -327,7 +328,7 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
           )}
 
           {/* Desktop extra filters */}
-          <div className="hidden md:grid md:grid-cols-5 gap-4 md:gap-6 mb-6">
+          <div className="hidden md:grid md:grid-cols-w gap-4 md:gap-6 mb-6">
             <div className="space-y-1 sm:space-y-2 text-black">
               <Label>Service</Label>
               <Select
@@ -380,7 +381,8 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
               <Button onClick={handleSearch}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Searching...
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />{" "}
+                    Searching...
                   </>
                 ) : (
                   <>

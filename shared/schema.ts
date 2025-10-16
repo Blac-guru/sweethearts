@@ -37,18 +37,17 @@ export type SubEstate = {
 
 /* ---------------- VERIFICATION ---------------- */
 // ✅ New structure for verification data attached to a Hairdresser
-export interface VerificationData {
-  country?: string;
-  idNumber?: string;
-  idFront?: string; // Cloudinary URL
-  idBack?: string;  // Cloudinary URL
-  selfie?: string;  // Cloudinary URL
-  status?: "pending" | "approved" | "rejected";
-  submittedAt?: string; // ISO string for time of submission
-  reviewedAt?: string;  // Optional - when admin approves/rejects
-  reviewerId?: string;  // Optional - admin who reviewed
-  rejectionReason?: string; // Optional
-}
+
+export type Verification = {
+  country?: string | null;
+  idType?: "national-id" | "passport" | string | null;
+  idNumber?: string | null;
+  idFront?: string | null; // URL to uploaded front image
+  idBack?: string | null; // URL to uploaded back image
+  selfie?: string | null; // URL to uploaded selfie
+  status?: "pending" | "approved" | "rejected" | string | null;
+  submittedAt?: Date | string | null;
+};
 
 /* ---------------- HAIRDRESSERS ---------------- */
 export const insertHairdresserSchema = z.object({
@@ -87,18 +86,30 @@ export const insertHairdresserSchema = z.object({
   // ✅ new verification section
   verification: z
     .object({
-      country: z.string().optional(),
-      idNumber: z.string().optional(),
-      idFront: z.string().optional(),
-      idBack: z.string().optional(),
-      selfie: z.string().optional(),
-      status: z.enum(["pending", "approved", "rejected"]).optional(),
-      submittedAt: z.string().optional(),
-      reviewedAt: z.string().optional(),
-      reviewerId: z.string().optional(),
-      rejectionReason: z.string().optional(),
+      country: z.string().nullable().optional(),
+      idType: z.enum(["national ID", "passport"]).nullable().optional(),
+      idNumber: z.string().nullable().optional(),
+      idFront: z.string().nullable().optional(),
+      idBack: z.string().nullable().optional(),
+      selfie: z.string().nullable().optional(),
+      status: z
+        .enum(["pending", "verified", "rejected", "manual_review"])
+        .default("pending")
+        .optional(),
+      submittedAt: z.string().nullable().optional(),
     })
-    .optional(),
+    .default({
+      country: null,
+      idType: null,
+      idNumber: null,
+      idFront: null,
+      idBack: null,
+      selfie: null,
+      status: "pending",
+      submittedAt: null,
+    }),
+
+  isVerified: z.boolean().optional(),
 });
 
 export type InsertHairdresser = z.infer<typeof insertHairdresserSchema>;
@@ -133,7 +144,8 @@ export type Hairdresser = {
   isAdult: boolean;
 
   // ✅ new optional verification data
-  verification?: VerificationData;
+  verification?: Verification | null;
+  isVerified?: boolean | false;
 };
 
 /* ---------------- COMPOSITE ---------------- */

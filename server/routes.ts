@@ -8,9 +8,17 @@ import crypto from "crypto";
 import { storage } from "./storage.js";
 import {
   InsertHairdresser,
+  Verification,
   insertBlogSchema,
   insertHairdresserSchema,
 } from "../shared/schema.js";
+
+// top of routes.ts imports
+import {
+  RekognitionClient,
+  CompareFacesCommand,
+} from "@aws-sdk/client-rekognition";
+import vision from "@google-cloud/vision"; // uses GOOGLE_APPLICATION_CREDENTIALS env var or ADC
 
 import { v2 as cloudinary } from "cloudinary";
 import { v4 as uuidv4 } from "uuid";
@@ -102,217 +110,266 @@ export function applyRoutes(app: Express) {
   // ---------------- HAIRDRESSERS ----------------
 
   // routes.ts (replace the existing handler)
-app.get("/api/hairdressers", async (req, res) => {
-  try {
-    const { townId, estateId, subEstateId, services, search } = req.query;
-    const filters: any = {};
+  app.get("/api/hairdressers", async (req, res) => {
+    try {
+      const { townId, estateId, subEstateId, services, search } = req.query;
+      const filters: any = {};
 
-    if (townId && !isNaN(Number(townId))) filters.townId = Number(townId);
-    if (estateId && !isNaN(Number(estateId)))
-      filters.estateId = Number(estateId);
-    if (subEstateId && !isNaN(Number(subEstateId)))
-      filters.subEstateId = Number(subEstateId);
-    if (search) filters.search = String(search);
-    if (services) {
-      filters.services = Array.isArray(services)
-        ? (services as string[])
-        : [String(services)];
-    }
-
-    // fetch either search results or all
-    let hairdressers =
-      Object.keys(filters).length > 0
-        ? await storage.searchHairdressers(filters)
-        : await storage.getAllHairdressers();
-
-    // ---------- Normalize and sort by membershipPlan: VIP > PRIME > REGULAR ----------
-    const planOrder: Record<string, number> = {
-  VIP: 1,
-  PRIME: 2,
-  REGULAR: 3,
-};
-
-
-   hairdressers.sort((a, b) => {
-  const planA = (a.membershipPlan || "PRIME").toString().toUpperCase();
-  const planB = (b.membershipPlan || "PRIME").toString().toUpperCase();
-  const orderA = planOrder[planA] ?? 2;
-  const orderB = planOrder[planB] ?? 2;
-  if (orderA !== orderB) return orderA - orderB;
-
-  // Tie-breaker: createdAt desc
-  const dateA = toDateSafe(a.createdAt);
-  const dateB = toDateSafe(b.createdAt);
-
-  if (dateA && dateB) {
-    return dateB.getTime() - dateA.getTime();
-  }
-  return 0;
-});
-
-
-    // ---------- Special-case: demote one specific email to bottom of VIPs ----------
-    const TARGET_EMAIL = "githinjilucy03@gmail.com";
-    const targetIndex = hairdressers.findIndex(
-      (h) => (h.email || "").toString().toLowerCase() === TARGET_EMAIL.toLowerCase()
-    );
-
-    if (targetIndex !== -1) {
-      // remove target from array
-      const [targetUser] = hairdressers.splice(targetIndex, 1);
-
-      // find last VIP index in the current array
-      let lastVIPIndex = -1;
-      for (let i = 0; i < hairdressers.length; i++) {
-        const plan = (hairdressers[i].membershipPlan || "PRIME").toString().toUpperCase();
-        if (plan === "VIP") lastVIPIndex = i;
+      if (townId && !isNaN(Number(townId))) filters.townId = Number(townId);
+      if (estateId && !isNaN(Number(estateId)))
+        filters.estateId = Number(estateId);
+      if (subEstateId && !isNaN(Number(subEstateId)))
+        filters.subEstateId = Number(subEstateId);
+      if (search) filters.search = String(search);
+      if (services) {
+        filters.services = Array.isArray(services)
+          ? (services as string[])
+          : [String(services)];
       }
 
-      // compute insertion index: after last VIP, else at position 0 if no VIPs
-      const insertIndex = lastVIPIndex >= 0 ? lastVIPIndex + 1 : 0;
+      // fetch either search results or all
+      let hairdressers =
+        Object.keys(filters).length > 0
+          ? await storage.searchHairdressers(filters)
+          : await storage.getAllHairdressers();
 
-      hairdressers.splice(insertIndex, 0, targetUser);
+      // ---------- Normalize and sort by membershipPlan: VIP > PRIME > REGULAR ----------
+      const planOrder: Record<string, number> = {
+        VIP: 1,
+        PRIME: 2,
+        REGULAR: 3,
+      };
+
+      hairdressers.sort((a, b) => {
+        const planA = (a.membershipPlan || "PRIME").toString().toUpperCase();
+        const planB = (b.membershipPlan || "PRIME").toString().toUpperCase();
+        const orderA = planOrder[planA] ?? 2;
+        const orderB = planOrder[planB] ?? 2;
+        if (orderA !== orderB) return orderA - orderB;
+
+        // Tie-breaker: createdAt desc
+        const dateA = toDateSafe(a.createdAt);
+        const dateB = toDateSafe(b.createdAt);
+
+        if (dateA && dateB) {
+          return dateB.getTime() - dateA.getTime();
+        }
+        return 0;
+      });
+
+      // ---------- Special-case: demote one specific email to bottom of VIPs ----------
+      const TARGET_EMAIL = "githinjilucy03@gmail.com";
+      const targetIndex = hairdressers.findIndex(
+        (h) =>
+          (h.email || "").toString().toLowerCase() ===
+          TARGET_EMAIL.toLowerCase()
+      );
+
+      if (targetIndex !== -1) {
+        // remove target from array
+        const [targetUser] = hairdressers.splice(targetIndex, 1);
+
+        // find last VIP index in the current array
+        let lastVIPIndex = -1;
+        for (let i = 0; i < hairdressers.length; i++) {
+          const plan = (hairdressers[i].membershipPlan || "PRIME")
+            .toString()
+            .toUpperCase();
+          if (plan === "VIP") lastVIPIndex = i;
+        }
+
+        // compute insertion index: after last VIP, else at position 0 if no VIPs
+        const insertIndex = lastVIPIndex >= 0 ? lastVIPIndex + 1 : 0;
+
+        hairdressers.splice(insertIndex, 0, targetUser);
+      }
+
+      res.json(hairdressers);
+    } catch (error) {
+      console.error("Error fetching hairdressers:", error);
+      res.status(500).json({ message: "Failed to fetch hairdressers" });
     }
-
-    res.json(hairdressers);
-  } catch (error) {
-    console.error("Error fetching hairdressers:", error);
-    res.status(500).json({ message: "Failed to fetch hairdressers" });
-  }
-});
-
+  });
 
   app.get("/api/hairdressers/:id", async (req, res) => {
-  try {
-    const hairdresserId = req.params.id;
+    try {
+      const hairdresserId = req.params.id;
 
-    // 🔹 Extract viewer UID if logged in
-    let viewerUid: string | undefined;
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
-      try {
-        const decoded = await auth.verifyIdToken(token);
-        viewerUid = decoded.uid;
-      } catch (err) {
-        console.warn("Invalid or expired token, treating as guest view");
+      // 🔹 Extract viewer UID if logged in
+      let viewerUid: string | undefined;
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        try {
+          const decoded = await auth.verifyIdToken(token);
+          viewerUid = decoded.uid;
+        } catch (err) {
+          console.warn("Invalid or expired token, treating as guest view");
+        }
       }
+
+      // 🔹 Session ID (from cookie or header)
+      let sessionId = req.cookies?.sessionId;
+      if (!sessionId) {
+        sessionId = uuidv4();
+        res.cookie("sessionId", sessionId, { httpOnly: true });
+      }
+
+      // ✅ Increment views only if rules pass
+      await storage.incrementProfileViews(hairdresserId, viewerUid, sessionId);
+
+      const hairdresser = await storage.getHairdresser(hairdresserId);
+
+      if (!hairdresser) {
+        return res.status(404).json({ message: "Hairdresser not found" });
+      }
+
+      res.json(hairdresser);
+    } catch (err) {
+      console.error("Error fetching hairdresser:", err);
+      res.status(500).json({ message: "Server error" });
     }
-
-    // 🔹 Session ID (from cookie or header)
-    let sessionId = req.cookies?.sessionId;
-    if (!sessionId) {
-      sessionId = uuidv4();
-      res.cookie("sessionId", sessionId, { httpOnly: true });
-    }
-
-    // ✅ Increment views only if rules pass
-    await storage.incrementProfileViews(hairdresserId, viewerUid, sessionId);
-
-    const hairdresser = await storage.getHairdresser(hairdresserId);
-
-    if (!hairdresser) {
-      return res.status(404).json({ message: "Hairdresser not found" });
-    }
-
-    res.json(hairdresser);
-  } catch (err) {
-    console.error("Error fetching hairdresser:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
+  });
 
   // New: get hairdresser for current authenticated firebase user
   // frontend should send Authorization: Bearer <firebase-id-token>
   app.get("/api/hairdressers/me", async (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({ message: "No token provided" });
     }
+
     const token = authHeader.split(" ")[1];
 
     try {
-      // Use admin SDK (or auth wrapper) to verify token
-      // You already imported admin and auth; using auth.verifyIdToken if available
-      const decoded = await auth.verifyIdToken(token);
+      const decoded = await admin.auth().verifyIdToken(token);
       const uid = decoded.uid;
+
+      console.log("🔑 Firebase UID from token:", uid);
+
       const hairdresser = await storage.getHairdresserByUid(uid);
-      if (!hairdresser) return res.status(404).json({ message: "Hairdresser not found" });
+      console.log(
+        "🎯 Found hairdresser:",
+        hairdresser ? hairdresser.id : "none"
+      );
+
+      if (!hairdresser) {
+        return res.status(404).json({ message: "Hairdresser not found" });
+      }
+
       return res.json(hairdresser);
     } catch (err) {
       console.error("Error in /api/hairdressers/me:", err);
-      return res.status(401).json({ message: "Invalid token" });
+      return res.status(500).json({ message: "Internal server error" });
     }
   });
 
+  // config / thresholds (tweak as you like)
+  const FACE_SIMILARITY_THRESHOLD = Number(
+    process.env.FACE_SIMILARITY_THRESHOLD ?? 80
+  ); // percent
+  const FACE_MINIMUM_CONFIDENCE = Number(
+    process.env.FACE_MINIMUM_CONFIDENCE ?? 70
+  ); // Rekognition confidence
+
+  // initialize providers (once)
+  const rekClient = new RekognitionClient({
+    region: process.env.AWS_REGION,
+    credentials: process.env.AWS_ACCESS_KEY_ID
+      ? {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        }
+      : undefined,
+  });
+
+  const visionClient = new vision.ImageAnnotatorClient({
+    // If running on GCP with service account, set GOOGLE_APPLICATION_CREDENTIALS env var.
+    // Otherwise pass credentials here: keyFilename or credentials.
+  });
+
+  // inside applyRoutes(app) — place where your other routes are defined
   app.post(
-  "/api/verification",
-  upload.fields([
-    { name: "idFront", maxCount: 1 },
-    { name: "idBack", maxCount: 1 },
-    { name: "selfie", maxCount: 1 },
-  ]),
-  async (req, res) => {
-    try {
-      const { country, idNumber, hairdresserId } = req.body;
+    "/api/verification",
+    upload.fields([
+      { name: "idFront", maxCount: 1 },
+      { name: "idBack", maxCount: 1 },
+      { name: "selfie", maxCount: 1 },
+    ]),
+    async (req, res) => {
+      try {
+        const { country, idNumber, idType, hairdresserId } = req.body;
 
-      if (!hairdresserId) {
-        return res.status(400).json({ message: "Missing hairdresserId" });
-      }
+        if (!hairdresserId) {
+          return res.status(400).json({ message: "Missing hairdresserId" });
+        }
 
-      // ✅ Upload images to Cloudinary
-      const idFrontFile = (req.files as any)?.idFront?.[0];
-      const idBackFile = (req.files as any)?.idBack?.[0];
-      const selfieFile = (req.files as any)?.selfie?.[0];
+        // get files (may be undefined)
+        const idFrontFile = (req.files as any)?.idFront?.[0] as
+          | Express.Multer.File
+          | undefined;
+        const idBackFile = (req.files as any)?.idBack?.[0] as
+          | Express.Multer.File
+          | undefined;
+        const selfieFile = (req.files as any)?.selfie?.[0] as
+          | Express.Multer.File
+          | undefined;
 
-      const uploaded = await Promise.all([
-        idFrontFile
-          ? storage.uploadFileToCloudinary(idFrontFile, "hairdresser-connect/verification")
-          : null,
-        idBackFile
-          ? storage.uploadFileToCloudinary(idBackFile, "hairdresser-connect/verification")
-          : null,
-        selfieFile
-          ? storage.uploadFileToCloudinary(selfieFile, "hairdresser-connect/verification")
-          : null,
-      ]);
+        // Upload present files to Cloudinary (parallel)
+        const uploaded = await Promise.all([
+          idFrontFile
+            ? storage.uploadFileToCloudinary(
+                idFrontFile,
+                "hairdresser-connect/verification"
+              )
+            : null,
+          idBackFile
+            ? storage.uploadFileToCloudinary(
+                idBackFile,
+                "hairdresser-connect/verification"
+              )
+            : null,
+          selfieFile
+            ? storage.uploadFileToCloudinary(
+                selfieFile,
+                "hairdresser-connect/verification"
+              )
+            : null,
+        ]);
 
-      const [idFrontUrl, idBackUrl, selfieUrl] = uploaded;
+        const [idFrontUrl, idBackUrl, selfieUrl] = uploaded;
 
-      // ✅ Update hairdresser record (mark as pending verification)
-      const updated = await storage.updateHairdresser(hairdresserId, {
-        verification: {
-          country,
-          idNumber,
-          idFront: idFrontUrl || undefined,
-          idBack: idBackUrl || undefined,
-          selfie: selfieUrl || undefined,
+        // Build verification object
+        const verificationPayload = {
+          country: country || null,
+          idType: idType || null,
+          idNumber: idNumber || null,
+          idFront: idFrontUrl || null,
+          idBack: idBackUrl || null,
+          selfie: selfieUrl || null,
           status: "pending",
           submittedAt: new Date().toISOString(),
-        },
-      });
+        };
 
-      res.status(200).json({
-        message: "Verification submitted successfully",
-        verification: updated.verification || {
-          country,
-          idNumber,
-          idFront: idFrontUrl,
-          idBack: idBackUrl,
-          selfie: selfieUrl,
-          status: "pending",
-        },
-      });
-    } catch (err) {
-      console.error("Verification upload error:", err);
-      res.status(500).json({ message: "Failed to upload verification data" });
+        // Update the hairdresser doc with verification object
+        const updated = await storage.updateHairdresser(hairdresserId, {
+          verification: verificationPayload,
+        });
+
+        // Return success and the verification data (or updated doc)
+        return res.status(200).json({
+          message: "Verification submitted successfully",
+          verification: updated.verification ?? verificationPayload,
+        });
+      } catch (err: any) {
+        console.error("Verification upload error:", err);
+        return res.status(500).json({
+          message: "Failed to submit verification",
+          error: err?.message,
+        });
+      }
     }
-  }
-);
-
-
+  );
 
   app.post(
     "/api/hairdressers",
@@ -356,10 +413,14 @@ app.get("/api/hairdressers", async (req, res) => {
         // ---------------- UPLOAD SERVICE IMAGES ----------------
         let serviceImagesUrls: string[] = [];
         if (req.files && (req.files as any).serviceImages) {
-          const files = (req.files as any).serviceImages as Express.Multer.File[];
+          const files = (req.files as any)
+            .serviceImages as Express.Multer.File[];
           serviceImagesUrls = await Promise.all(
             files.map((file) =>
-              storage.uploadFileToCloudinary(file, "hairdresser-connect/services")
+              storage.uploadFileToCloudinary(
+                file,
+                "hairdresser-connect/services"
+              )
             )
           );
         }
@@ -387,13 +448,17 @@ app.get("/api/hairdressers", async (req, res) => {
         const validatedData = insertHairdresserSchema.parse(hairdresserData);
 
         // ---------------- SAVE ----------------
-        const createdHairdresser = await storage.createHairdresser(validatedData);
+        const createdHairdresser = await storage.createHairdresser(
+          validatedData
+        );
         res.status(201).json(createdHairdresser);
       } catch (error) {
         console.error("Registration error:", error);
         res.status(400).json({
           message:
-            error instanceof Error ? error.message : JSON.stringify(error, null, 2),
+            error instanceof Error
+              ? error.message
+              : JSON.stringify(error, null, 2),
         });
       }
     }
@@ -455,23 +520,33 @@ app.get("/api/hairdressers", async (req, res) => {
   // ---------------- PAYMENTS ----------------
 
   // Initialize payment - returns Paystack authorization_url & reference
+  // Initialize payment - returns Paystack authorization_url & reference
   app.post("/api/hairdressers/:id/initiate-payment", async (req, res) => {
     try {
       const { id } = req.params;
-      const { phoneNumber, email } = req.body;
+      const { phoneNumber, email, amount: clientAmount } = req.body;
 
       const hairdresser = await storage.getHairdresser(id);
       if (!hairdresser)
         return res.status(404).json({ message: "Hairdresser not found" });
 
-      const amountKES = hairdresser.registrationFee ?? 500; // KES
+      // Determine registration fee based on membership plan
+      const membershipPlan = hairdresser.membershipPlan || "PRIME";
+      const registrationFees: Record<string, number> = {
+        REGULAR: 500,
+        PRIME: 1000,
+        VIP: 1500,
+      };
+      const amountKES = registrationFees[membershipPlan.toUpperCase()] || 1000;
+
       const amount = Math.round(amountKES * 100); // Paystack expects kobo
 
       // fallback email if none: Paystack requires an email format
       const customerEmail =
         email || hairdresser.email || `no-reply+${id}@sweetheart.local`;
 
-      const callbackBase = process.env.CLIENT_BASE_URL || `http://localhost:3000`;
+      const callbackBase =
+        process.env.CLIENT_BASE_URL || `http://localhost:3000`;
       const callbackUrl = `${callbackBase}/paystack-callback?hairdresserId=${encodeURIComponent(
         id
       )}`;
@@ -486,20 +561,22 @@ app.get("/api/hairdressers", async (req, res) => {
         },
       };
 
-      const initRes = await fetch("https://api.paystack.co/transaction/initialize", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      const initRes = await fetch(
+        "https://api.paystack.co/transaction/initialize",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       const data = await initRes.json();
       if (!initRes.ok) {
         return res.status(initRes.status).json(data);
       }
-      // return the entire paystack response to the client (client will use data.data.authorization_url)
       return res.json(data);
     } catch (err) {
       console.error("initiate-payment error:", err);
@@ -507,15 +584,18 @@ app.get("/api/hairdressers", async (req, res) => {
     }
   });
 
-  // Verify payment - called by the callback page (or you can call this from a webhook)
+  // Verify payment - called by callback
   app.post("/api/hairdressers/:id/verify-payment", async (req, res) => {
     try {
       const { id } = req.params;
       const { reference } = req.body;
-      if (!reference) return res.status(400).json({ message: "Missing reference" });
+      if (!reference)
+        return res.status(400).json({ message: "Missing reference" });
 
       const verifyRes = await fetch(
-        `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+        `https://api.paystack.co/transaction/verify/${encodeURIComponent(
+          reference
+        )}`,
         {
           method: "GET",
           headers: {
@@ -529,19 +609,29 @@ app.get("/api/hairdressers", async (req, res) => {
         return res.status(verifyRes.status).json(json);
       }
 
-      // Paystack data is in json.data
       const payData = json.data;
 
-      // Check success
       if (payData.status !== "success") {
-        return res.status(400).json({ message: "Payment is not successful", data: json });
+        return res
+          .status(400)
+          .json({ message: "Payment is not successful", data: json });
       }
 
-      // Optional: validate amount >= expected
+      // Determine expected registration fee based on membership plan
       const hairdresser = await storage.getHairdresser(id);
-      if (!hairdresser) return res.status(404).json({ message: "Hairdresser not found" });
+      if (!hairdresser)
+        return res.status(404).json({ message: "Hairdresser not found" });
 
-      const expected = Math.round((hairdresser.registrationFee ?? 100) * 100);
+      const membershipPlan = hairdresser.membershipPlan || "PRIME";
+      const registrationFees: Record<string, number> = {
+        REGULAR: 500,
+        PRIME: 1000,
+        VIP: 1500,
+      };
+      const expectedKES =
+        registrationFees[membershipPlan.toUpperCase()] || 1000;
+      const expected = Math.round(expectedKES * 100);
+
       if (typeof payData.amount === "number" && payData.amount < expected) {
         return res.status(400).json({
           message: "Paid amount is less than required registration fee",
@@ -549,11 +639,15 @@ app.get("/api/hairdressers", async (req, res) => {
         });
       }
 
-      // Update hairdresser in DB
+      const paymentDate = new Date();
+      const nextPaymentDate = new Date(paymentDate);
+      nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+
       await storage.updateHairdresser(id, {
         isPaid: true,
         paymentReference: reference,
-        paymentDate: new Date(),
+        paymentDate,
+        nextPaymentDate,
       });
 
       return res.json({ success: true, payData });
@@ -566,40 +660,44 @@ app.get("/api/hairdressers", async (req, res) => {
   // Optional: webhook endpoint (recommended for production)
   // This route must be configured in Paystack dashboard to point to YOUR /api/paystack/webhook endpoint.
   // Use express.raw to receive raw body for signature verification.
-  app.post("/api/paystack/webhook", express.raw({ type: "*/*" }), async (req, res) => {
-    try {
-      const signature = (req.headers["x-paystack-signature"] || "") as string;
-      const hash = crypto
-        .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY || "")
-        .update(req.body)
-        .digest("hex");
+  app.post(
+    "/api/paystack/webhook",
+    express.raw({ type: "*/*" }),
+    async (req, res) => {
+      try {
+        const signature = (req.headers["x-paystack-signature"] || "") as string;
+        const hash = crypto
+          .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY || "")
+          .update(req.body)
+          .digest("hex");
 
-      if (hash !== signature) {
-        console.warn("Invalid Paystack webhook signature");
-        return res.status(401).send("invalid signature");
-      }
-
-      const event = JSON.parse(req.body.toString());
-      // Example: handle charge.success
-      if (event.event === "charge.success") {
-        const { reference, metadata } = event.data;
-        const hairdresserId = metadata?.hairdresserId;
-        if (hairdresserId) {
-          await storage.updateHairdresser(hairdresserId, {
-            isPaid: true,
-            paymentReference: reference,
-            paymentDate: new Date(),
-          });
+        if (hash !== signature) {
+          console.warn("Invalid Paystack webhook signature");
+          return res.status(401).send("invalid signature");
         }
-      }
 
-      // acknowledge receipt
-      res.status(200).send("ok");
-    } catch (err) {
-      console.error("webhook error:", err);
-      res.status(500).send("error");
+        const event = JSON.parse(req.body.toString());
+        // Example: handle charge.success
+        if (event.event === "charge.success") {
+          const { reference, metadata } = event.data;
+          const hairdresserId = metadata?.hairdresserId;
+          if (hairdresserId) {
+            await storage.updateHairdresser(hairdresserId, {
+              isPaid: true,
+              paymentReference: reference,
+              paymentDate: new Date(),
+            });
+          }
+        }
+
+        // acknowledge receipt
+        res.status(200).send("ok");
+      } catch (err) {
+        console.error("webhook error:", err);
+        res.status(500).send("error");
+      }
     }
-  });
+  );
 
   // ---------------- BLOGS ----------------
 
