@@ -1,7 +1,7 @@
 // api/index.ts
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import express from "express";
-import { applyRoutes } from "./routes";
+import { applyRoutes } from "./routes.js";
 
 const app = express();
 app.use(express.json());
