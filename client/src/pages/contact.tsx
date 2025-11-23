@@ -1,5 +1,5 @@
 import Navbar from "@/components/navbar.jsx";
-import { Phone, Twitter, Send} from "lucide-react";
+import { Phone, Twitter, Send } from "lucide-react";
 import { Link } from "wouter";
 
 export default function ContactPage() {
@@ -26,24 +26,24 @@ export default function ContactPage() {
                 href="tel:+254717177069"
                 className="block text-primary hover:underline"
               >
-                +254 717 177 069
+                +254 7
               </a>
             </div>
           </div>
 
           {/* Telegram (Disabled with hover text) */}
           <a href="https://t.me/mysweetheartnextdoor">
-          <div className="bg-card shadow-sm rounded-2xl p-6 flex items-start space-x-4 relative group">
-            <Send className="w-6 h-6 text-primary mt-1" />
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">
-                Telegram
-              </h2>
-              <span className="text-muted-foreground cursor-not-allowed">
-                @mysweetheartnextdoor
-              </span>
+            <div className="bg-card shadow-sm rounded-2xl p-6 flex items-start space-x-4 relative group">
+              <Send className="w-6 h-6 text-primary mt-1" />
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  Telegram
+                </h2>
+                <span className="text-muted-foreground cursor-not-allowed">
+                  @mysweetheartnextdoor
+                </span>
+              </div>
             </div>
-          </div>
           </a>
 
           {/* Twitter (Disabled with hover text) */}
