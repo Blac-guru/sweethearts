@@ -1,16 +1,10 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/**/*.ts", "use": "@vercel/node" },
-    { "src": "dist/public/**/*", "use": "@vercel/static" }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.ts" },
     { "src": "/sitemap.xml", "dest": "/api/sitemap.ts" },
-
-    { "src": "/assets/(.*)", "dest": "/dist/public/assets/$1" },
-    { "src": "/hearts.png", "dest": "/dist/public/hearts.png" },
-
-    { "src": "/(.*)", "dest": "/dist/public/index.html" }
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
