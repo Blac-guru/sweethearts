@@ -32,12 +32,12 @@ export default function Homepage() {
     },
   });
 
-  const headline = useMemo(() => {
-    const count = hairdressers.length;
-    return count > 0
-      ? `${count} ${count === 1 ? "profile" : "profiles"} ready to meet you`
-      : "Discover local matches";
-  }, [hairdressers.length]);
+  // const headline = useMemo(() => {
+  //   const count = hairdressers.length;
+  //   return count > 0
+  //     ? `${count} ${count === 1 ? "profile" : "profiles"} ready to meet you`
+  //     : "Discover local matches";
+  // }, [hairdressers.length]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,12 +62,12 @@ export default function Homepage() {
             >
               Professional Call Girls
             </h2>
-            <p
+            {/* <p
               className="text-muted-foreground mt-1"
               data-testid="results-count"
             >
               {headline}
-            </p>
+            </p> */}
           </div>
           <Link href="/search" className="hidden sm:block">
             <Button variant="outline" size="sm">
