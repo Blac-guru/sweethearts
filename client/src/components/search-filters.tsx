@@ -39,7 +39,7 @@ const SLIDES = [
       "https://www.shutterstock.com/image-photo/fit-athletic-african-american-woman-600nw-2346908027.jpg",
     title: "More Than Just Encounters",
     subtitle:
-      "Connect with professionals offering unique skills and experiences.",
+      "Connect with professionals offering unique professional skills and experiences.",
   },
   {
     image:
