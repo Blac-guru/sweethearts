@@ -18,6 +18,9 @@ import {
   Town as SchemaTown,
   Estate as SchemaEstate,
   SubEstate as SchemaSubEstate,
+  Message,
+  InsertMessage,
+  Conversation,
 } from "../shared/schema.js"; // adjust relative path
 
 import { KENYA_LOCATIONS } from "../client/src/data/kenya-locations.js";
@@ -106,6 +109,14 @@ export interface IStorage {
   getUnpaidHairdresser(
     id: string
   ): Promise<HairdresserWithLocation | undefined>;
+
+  // Chat & Messaging
+  createConversation(participantIds: string[]): Promise<string>;
+  getConversation(conversationId: string): Promise<Conversation | undefined>;
+  getConversationsBySender(senderId: string): Promise<Conversation[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  getMessagesByConversation(conversationId: string): Promise<Message[]>;
+  markMessageAsRead(messageId: string): Promise<void>;
 }
 
 // Check if object has 'buffer' property (Multer files)
@@ -732,6 +743,94 @@ export class FirestoreStorage implements IStorage {
     // 🔹 Reuse the same addLocationData logic for consistency
     const [hd] = await this.addLocationData([{ ...h, id: doc.id }]);
     return hd;
+  }
+
+  /* ========== CHAT & MESSAGING ========== */
+  async createConversation(participantIds: string[]): Promise<string> {
+    const sortedIds = participantIds.sort();
+    const conversationId = sortedIds.join("_");
+
+    const existing = await db
+      .collection("conversations")
+      .doc(conversationId)
+      .get();
+
+    if (existing.exists) {
+      return conversationId;
+    }
+
+    const conversation: Omit<Conversation, "lastMessage"> = {
+      id: conversationId,
+      participantIds: sortedIds,
+      lastMessageAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await db.collection("conversations").doc(conversationId).set(conversation);
+    return conversationId;
+  }
+
+  async getConversation(
+    conversationId: string
+  ): Promise<Conversation | undefined> {
+    const doc = await db.collection("conversations").doc(conversationId).get();
+    if (!doc.exists) return undefined;
+    return { ...(doc.data() as any), id: doc.id } as Conversation;
+  }
+
+  async getConversationsBySender(senderId: string): Promise<Conversation[]> {
+    const snap = await db
+      .collection("conversations")
+      .where("participantIds", "array-contains", senderId)
+      .orderBy("updatedAt", "desc")
+      .get();
+
+    return snap.docs.map(
+      (d) => ({ ...(d.data() as any), id: d.id } as Conversation)
+    );
+  }
+
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const messageData: Omit<Message, "id"> = {
+      conversationId: message.conversationId,
+      senderId: message.senderId,
+      content: message.content,
+      createdAt: message.createdAt || new Date(),
+      readAt: message.readAt || null,
+    };
+
+    const docRef = db
+      .collection("conversations")
+      .doc(message.conversationId)
+      .collection("messages")
+      .doc();
+
+    await docRef.set(messageData);
+
+    await db.collection("conversations").doc(message.conversationId).update({
+      lastMessageAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    return { ...messageData, id: docRef.id };
+  }
+
+  async getMessagesByConversation(conversationId: string): Promise<Message[]> {
+    const snap = await db
+      .collection("conversations")
+      .doc(conversationId)
+      .collection("messages")
+      .orderBy("createdAt", "asc")
+      .get();
+
+    return snap.docs.map(
+      (d) => ({ ...(d.data() as any), id: d.id } as Message)
+    );
+  }
+
+  async markMessageAsRead(_messageId: string): Promise<void> {
+    return;
   }
 }
 

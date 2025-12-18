@@ -16,6 +16,8 @@ export function getApiBase(): string {
     | string
     | undefined;
 
+  console.log("API Base URL:", envBase);
+
   // Default for dev: use relative API path which is proxied
   if (!envBase || !envBase.trim()) return "/api";
 
