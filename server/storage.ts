@@ -408,8 +408,27 @@ export class FirestoreStorage implements IStorage {
   async getHairdresser(
     id: string
   ): Promise<HairdresserWithLocation | undefined> {
-    const doc = await this.sweetheartsCollection.doc(id).get();
-    if (!doc.exists) return undefined;
+    // First, try direct document ID lookup (for generic users like "hair-001")
+    let doc = await this.sweetheartsCollection.doc(id).get();
+
+    // If not found and ID looks like a firebaseUid, try querying by firebaseUid field
+    if (!doc.exists) {
+      console.log(
+        `[Storage] Direct lookup failed for ${id}, trying firebaseUid query...`
+      );
+      const snapshot = await this.sweetheartsCollection
+        .where("firebaseUid", "==", id)
+        .limit(1)
+        .get();
+
+      if (!snapshot.empty) {
+        doc = snapshot.docs[0];
+        console.log(`[Storage] Found document by firebaseUid: ${id}`);
+      } else {
+        console.log(`[Storage] No document found for ID or firebaseUid: ${id}`);
+        return undefined;
+      }
+    }
 
     const rawData = doc.data() as any;
 

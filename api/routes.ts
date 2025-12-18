@@ -243,6 +243,7 @@ export function applyRoutes(app: Express) {
   app.get("/api/hairdressers/:id", async (req, res) => {
     try {
       const hairdresserId = req.params.id;
+      console.log(`[API] Fetching hairdresser: ${hairdresserId}`);
 
       // 🔹 Extract viewer UID if logged in
       let viewerUid: string | undefined;
@@ -270,13 +271,20 @@ export function applyRoutes(app: Express) {
       const hairdresser = await storage.getHairdresser(hairdresserId);
 
       if (!hairdresser) {
+        console.warn(`[API] Hairdresser not found: ${hairdresserId}`);
         return res.status(404).json({ message: "Hairdresser not found" });
       }
 
+      console.log(`[API] ✓ Found hairdresser ${hairdresserId}:`, {
+        name: hairdresser.nickName || hairdresser.fullName,
+        hasPhoto: !!hairdresser.profilePhoto,
+      });
       res.json(hairdresser);
     } catch (err) {
       console.error("Error fetching hairdresser:", err);
-      res.status(500).json({ message: "Server error" });
+      res
+        .status(500)
+        .json({ message: "Server error", error: (err as any)?.message });
     }
   });
 

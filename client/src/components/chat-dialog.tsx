@@ -3,18 +3,22 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Input } from "@/components/ui/input.jsx";
 import { ScrollArea } from "@/components/ui/scroll-area.jsx";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/components/ui/avatar.jsx";
 import { useToast } from "@/hooks/use-toast.js";
 import {
   useMessagesQuery,
   useSendMessageMutation,
   useStartConversationMutation,
 } from "@/hooks/use-chat.js";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { getTestUserId } from "@/lib/chat-api";
 
 interface ChatDialogProps {
@@ -22,6 +26,7 @@ interface ChatDialogProps {
   onOpenChange: (open: boolean) => void;
   recipientId?: string | null;
   recipientName: string;
+  recipientPhoto?: string;
 }
 
 export function ChatDialog({
@@ -29,6 +34,7 @@ export function ChatDialog({
   onOpenChange,
   recipientId,
   recipientName,
+  recipientPhoto,
 }: ChatDialogProps) {
   const { toast } = useToast();
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -123,14 +129,30 @@ export function ChatDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl p-0">
-        <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>Chat with {recipientName}</DialogTitle>
-          {showAuthWarning && (
-            <p className="text-sm text-muted-foreground">
-              You need to be signed in to chat.
-            </p>
-          )}
+      <DialogContent className="max-w-xl p-0 flex flex-col h-[600px]">
+        <DialogHeader className="border-b px-6 py-4 flex flex-row items-center justify-between space-y-0">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Avatar className="h-10 w-10 flex-shrink-0">
+              <AvatarImage src={recipientPhoto || ""} alt={recipientName} />
+              <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-400 text-white font-bold">
+                {recipientName.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-semibold text-foreground truncate">
+                {recipientName}
+              </h2>
+              <p className="text-xs text-muted-foreground">Active now</p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            className="flex-shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </DialogHeader>
 
         <div className="flex h-[480px] flex-col">

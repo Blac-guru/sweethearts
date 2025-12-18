@@ -21,7 +21,9 @@ export default function ContactPage() {
           <div className="bg-card shadow-sm rounded-2xl p-6 flex items-start space-x-4">
             <Phone className="w-6 h-6 text-primary mt-1" />
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Phone</h2>
+              <h2 className="text-lg font-semibold text-foreground">
+                Whatsapp
+              </h2>
               <a
                 href="tel:+254717177069"
                 className="block text-primary hover:underline"
