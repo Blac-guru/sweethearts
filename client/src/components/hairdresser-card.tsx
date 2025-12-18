@@ -78,16 +78,29 @@ export default function HairdresserCard({ hairdresser }: HairdresserCardProps) {
             </span>
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80" />
-            <div className="absolute bottom-3 left-3 flex items-center gap-2 text-white drop-shadow-lg">
-              <h3
-                className="text-lg font-semibold"
-                data-testid={`text-name-${hairdresser.id}`}
-              >
-                {hairdresser.nickName}
-              </h3>
-              <Badge variant="secondary" className="bg-white/90 text-gray-900">
-                Tap to view
-              </Badge>
+            <div className="absolute bottom-3 left-3 right-3 flex flex-col gap-1 text-white drop-shadow-lg">
+              <div className="flex items-center gap-2">
+                <h3
+                  className="text-lg font-semibold"
+                  data-testid={`text-name-${hairdresser.id}`}
+                >
+                  {hairdresser.nickName}
+                </h3>
+                <Badge
+                  variant="secondary"
+                  className="bg-white/90 text-gray-900"
+                >
+                  Tap to view
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4" />
+                <span className="truncate">
+                  {hairdresser.estate?.name ??
+                    `Estate ID: ${hairdresser.estateId}`}
+                  , {hairdresser.town?.name ?? `Town ID: ${hairdresser.townId}`}
+                </span>
+              </div>
             </div>
           </div>
         </Card>

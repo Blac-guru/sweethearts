@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useConversationsQuery } from "@/hooks/use-chat.js";
-import { getTestUserId } from "@/lib/chat-api";
+import { getTestUserId, getApiBase } from "@/lib/chat-api";
 import { ChatDialog } from "@/components/chat-dialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Card } from "@/components/ui/card.jsx";
@@ -48,7 +48,7 @@ export default function ChatsPage() {
     Promise.all(
       allParticipantIds.map(async (id) => {
         try {
-          const res = await fetch(`/api/hairdressers/${id}`);
+          const res = await fetch(`${getApiBase()}/hairdressers/${id}`);
           if (res.ok) {
             const profile = await res.json();
             return { id, data: profile };

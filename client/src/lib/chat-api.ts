@@ -11,6 +11,14 @@ export function getTestUserId(): string {
   return id;
 }
 
+export function getApiBase(): string {
+  const envBase = (import.meta as any).env?.VITE_API_BASE_URL as
+    | string
+    | undefined;
+  if (envBase && envBase.trim()) return envBase.replace(/\/$/, "");
+  return "/api"; // fallback to relative on dev
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const contentType = res.headers.get("content-type") || "";
@@ -32,7 +40,7 @@ export async function startConversation(
 ): Promise<{ conversationId: string }> {
   const res = await apiRequest(
     "POST",
-    "/api/chats/start",
+    `${getApiBase()}/chats/start`,
     { recipientId },
     undefined,
     { "x-user-id": getTestUserId() }
@@ -42,9 +50,15 @@ export async function startConversation(
 }
 
 export async function fetchConversations(): Promise<Conversation[]> {
-  const res = await apiRequest("GET", "/api/chats", undefined, undefined, {
-    "x-user-id": getTestUserId(),
-  });
+  const res = await apiRequest(
+    "GET",
+    `${getApiBase()}/chats`,
+    undefined,
+    undefined,
+    {
+      "x-user-id": getTestUserId(),
+    }
+  );
   await throwIfResNotOk(res);
   return res.json();
 }
@@ -54,7 +68,7 @@ export async function fetchMessages(
 ): Promise<Message[]> {
   const res = await apiRequest(
     "GET",
-    `/api/chats/${conversationId}/messages`,
+    `${getApiBase()}/chats/${conversationId}/messages`,
     undefined
   );
   await throwIfResNotOk(res);
@@ -67,7 +81,7 @@ export async function sendMessage(
 ): Promise<Message> {
   const res = await apiRequest(
     "POST",
-    `/api/chats/${conversationId}/messages`,
+    `${getApiBase()}/chats/${conversationId}/messages`,
     { content },
     undefined,
     { "x-user-id": getTestUserId() }
