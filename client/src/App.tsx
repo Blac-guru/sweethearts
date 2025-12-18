@@ -17,6 +17,8 @@ import PrivacyPolicyPage from "./pages/privacy.jsx";
 import CookiePolicyPage from "./pages/cookies.jsx";
 import ParentalControlsPage from "./pages/parental-controls.jsx";
 import CookieConsent from "./components/cookie-consent.jsx";
+import SearchPage from "./pages/search.jsx";
+import ChatsPage from "./pages/chats.jsx";
 import { HelmetProvider } from "react-helmet-async";
 
 function Router() {
@@ -34,7 +36,9 @@ function Router() {
     <Switch>
       <Route path="/age-consent" component={AgeConsentPage} />
       <Route path="/" component={Homepage} />
+      <Route path="/search" component={SearchPage} />
       <Route path="/profile/:id" component={ProfilePage} />
+      <Route path="/chats" component={ChatsPage} />
       <Route path="/register" component={SetupAccountPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/register/details" component={RegistrationPage} />

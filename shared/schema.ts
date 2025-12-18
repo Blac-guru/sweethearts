@@ -182,3 +182,45 @@ export type Blog = {
   published?: boolean;
   createdAt: Date;
 };
+
+/* ---------------- CHAT & MESSAGING ---------------- */
+export const insertMessageSchema = z.object({
+  conversationId: z.string().min(1),
+  senderId: z.string().min(1),
+  content: z.string().min(1),
+  createdAt: z.date().optional(),
+  readAt: z.date().optional().nullable(),
+});
+
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type Message = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName?: string;
+  content: string;
+  createdAt: Date;
+  readAt?: Date | null;
+};
+
+export const insertConversationSchema = z.object({
+  participantIds: z.array(z.string()).min(2),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+
+export type Conversation = {
+  id: string;
+  participantIds: string[];
+  lastMessage?: Message;
+  lastMessageAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ConversationWithParticipants = Conversation & {
+  participants: Hairdresser[];
+};

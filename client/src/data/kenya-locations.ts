@@ -658,9 +658,161 @@ export const KENYA_LOCATIONS: LocationsData[] = [
           },
         ],
       },
-
       {
         id: 8,
+        name: "Ukunda-Diani",
+        estates: [
+          {
+            id: 1,
+            name: "Diani Beach",
+            subEstates: [
+              { id: 101, name: "Diani Centre" },
+              { id: 102, name: "Galu Beach" },
+              { id: 103, name: "Kinondo" },
+              { id: 104, name: "Jadini" },
+            ],
+          },
+          {
+            id: 2,
+            name: "Ukunda Town",
+            subEstates: [
+              { id: 201, name: "Ukunda Centre" },
+              { id: 202, name: "Ukunda South" },
+              { id: 203, name: "Nanyumbu Estate" },
+            ],
+          },
+          {
+            id: 3,
+            name: "Makongeni",
+            subEstates: [
+              { id: 301, name: "Makongeni Estate" },
+              { id: 302, name: "Maridi" },
+              { id: 303, name: "Mwachuma" },
+            ],
+          },
+        ],
+      },
+      {
+        id: 9,
+        name: "Malindi",
+        estates: [
+          {
+            id: 1,
+            name: "Malindi Town",
+            subEstates: [
+              { id: 101, name: "Malindi Beach" },
+              { id: 102, name: "Malindi Centre" },
+              { id: 103, name: "Lamu Road" },
+              { id: 104, name: "Shella Drive" },
+            ],
+          },
+          {
+            id: 2,
+            name: "Mama Ngina Drive",
+            subEstates: [
+              { id: 201, name: "Tourist Beach" },
+              { id: 202, name: "Waterfront Estate" },
+              { id: 203, name: "Palace Road" },
+            ],
+          },
+          {
+            id: 3,
+            name: "Silversands",
+            subEstates: [
+              { id: 301, name: "Silversands North" },
+              { id: 302, name: "Silversands South" },
+              { id: 303, name: "Silversands Estate" },
+            ],
+          },
+          {
+            id: 4,
+            name: "Casuarina",
+            subEstates: [
+              { id: 401, name: "Casuarina North" },
+              { id: 402, name: "Casuarina South" },
+              { id: 403, name: "Casuarina Centre" },
+            ],
+          },
+        ],
+      },
+      {
+        id: 10,
+        name: "Mtwapa",
+        estates: [
+          {
+            id: 1,
+            name: "Mtwapa Town",
+            subEstates: [
+              { id: 101, name: "Mtwapa Centre" },
+              { id: 102, name: "Mtwapa Beach" },
+              { id: 103, name: "Mtwapa South" },
+            ],
+          },
+          {
+            id: 2,
+            name: "Shanzu",
+            subEstates: [
+              { id: 201, name: "Shanzu Estate" },
+              { id: 202, name: "Shanzu North" },
+              { id: 203, name: "Shanzu Beach" },
+            ],
+          },
+          {
+            id: 3,
+            name: "Maisonette",
+            subEstates: [
+              { id: 301, name: "Maisonette Estate" },
+              { id: 302, name: "Maisonette North" },
+              { id: 303, name: "Maisonette South" },
+            ],
+          },
+        ],
+      },
+      {
+        id: 11,
+        name: "Kilifi",
+        estates: [
+          {
+            id: 1,
+            name: "Kilifi Town",
+            subEstates: [
+              { id: 101, name: "Kilifi Centre" },
+              { id: 102, name: "Kilifi Beach" },
+              { id: 103, name: "Shimo la Tewa" },
+            ],
+          },
+          {
+            id: 2,
+            name: "Takaungu",
+            subEstates: [
+              { id: 201, name: "Takaungu Estate" },
+              { id: 202, name: "Takaungu North" },
+              { id: 203, name: "Takaungu South" },
+            ],
+          },
+          {
+            id: 3,
+            name: "Tezo",
+            subEstates: [
+              { id: 301, name: "Tezo Estate" },
+              { id: 302, name: "Tezo North" },
+              { id: 303, name: "Tezo Beach" },
+            ],
+          },
+          {
+            id: 4,
+            name: "Watamu",
+            subEstates: [
+              { id: 401, name: "Watamu Centre" },
+              { id: 402, name: "Watamu Beach" },
+              { id: 403, name: "Hemingway Estate" },
+            ],
+          },
+        ],
+      },
+
+      {
+        id: 12,
         name: "Nakuru",
         estates: [
           {

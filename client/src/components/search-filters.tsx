@@ -71,10 +71,24 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
     return () => clearInterval(interval);
   }, []);
 
-  const allTowns = useMemo(
-    () => KENYA_LOCATIONS.flatMap((loc) => loc.towns.map((t) => t.name)).sort(),
-    []
-  );
+  const majorTowns = [
+    "Nairobi",
+    "Mombasa",
+    "Kisumu",
+    "Ukunda-Diani",
+    "Malindi",
+    "Mtwapa",
+    "Kilifi",
+  ];
+
+  const allTowns = useMemo(() => {
+    const towns = KENYA_LOCATIONS.flatMap((loc) =>
+      loc.towns.map((t) => t.name)
+    );
+    const major = majorTowns.filter((m) => towns.includes(m));
+    const other = towns.filter((t) => !majorTowns.includes(t)).sort();
+    return { major, other: other };
+  }, []);
 
   const estates = useMemo(() => {
     if (town === "all") return [];
@@ -196,11 +210,21 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Towns</SelectItem>
-                  {allTowns.map((t) => (
+                  {allTowns.major.map((t) => (
                     <SelectItem key={t} value={t}>
                       {t}
                     </SelectItem>
                   ))}
+                  {allTowns.other.length > 0 && (
+                    <>
+                      <hr className="my-1" />
+                      {allTowns.other.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

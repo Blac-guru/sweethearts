@@ -77,6 +77,26 @@ export default function Navbar() {
 
           {/* Desktop Links */}
           <div className="hidden lg:flex items-center space-x-4">
+            <Link href="/search">
+              <Button
+                variant={location === "/search" ? "default" : "outline"}
+                size="sm"
+                data-testid="nav-search"
+              >
+                Search Filters
+              </Button>
+            </Link>
+
+            <Link href="/chats">
+              <Button
+                variant={location === "/chats" ? "default" : "outline"}
+                size="sm"
+                data-testid="nav-chats"
+              >
+                Chats
+              </Button>
+            </Link>
+
             <Link href="/contact">
               <Button
                 variant={location === "/contact" ? "default" : "outline"}
@@ -139,6 +159,27 @@ export default function Navbar() {
             className="lg:hidden bg-card border-t border-border shadow-md"
           >
             <div className="px-4 py-4 space-y-4 flex flex-col">
+              <Link href="/search">
+                <Button
+                  onClick={() => setIsOpen(false)}
+                  variant={location === "/search" ? "default" : "outline"}
+                  className="w-full"
+                  data-testid="nav-search-mobile"
+                >
+                  Search Filters
+                </Button>
+              </Link>
+
+              <Link href="/chats">
+                <Button
+                  onClick={() => setIsOpen(false)}
+                  variant={location === "/chats" ? "default" : "outline"}
+                  className="w-full"
+                >
+                  Chats
+                </Button>
+              </Link>
+
               <Link href="/contact">
                 <Button
                   onClick={() => setIsOpen(false)}

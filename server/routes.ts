@@ -874,6 +874,105 @@ export function applyRoutes(app: Express) {
     res.send(svg);
   });
 
+  /* ========== CHAT API ENDPOINTS (Auth-optional for testing) ========== */
+
+  // Initiate or get conversation between two users
+  app.post("/api/chats/start", async (req, res) => {
+    try {
+      const { recipientId } = req.body;
+      const userId =
+        (req as any).user?.uid ||
+        (req.headers["x-user-id"] as string) ||
+        (req.query.userId as string) ||
+        (req.body?.userId as string);
+
+      if (!recipientId || recipientId === userId) {
+        return res.status(400).json({ error: "Invalid recipient" });
+      }
+      if (!userId) {
+        return res.status(400).json({ error: "Missing user identity" });
+      }
+
+      const conversationId = await storage.createConversation([
+        userId,
+        recipientId,
+      ]);
+      res.json({ conversationId });
+    } catch (err: any) {
+      console.error("Error starting chat:", err);
+      res.status(500).json({ error: err.message || "Failed to start chat" });
+    }
+  });
+
+  // Get user's conversations
+  app.get("/api/chats", async (req, res) => {
+    try {
+      const userId =
+        (req as any).user?.uid ||
+        (req.headers["x-user-id"] as string) ||
+        (req.query.userId as string) ||
+        (req.body?.userId as string);
+      if (!userId) {
+        return res.status(400).json({ error: "Missing user identity" });
+      }
+      const conversations = await storage.getConversationsBySender(userId);
+      res.json(conversations);
+    } catch (err: any) {
+      console.error("Error fetching conversations:", err);
+      res
+        .status(500)
+        .json({ error: err.message || "Failed to fetch conversations" });
+    }
+  });
+
+  // Get messages from a conversation
+  app.get("/api/chats/:conversationId/messages", async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const messages = await storage.getMessagesByConversation(conversationId);
+      res.json(messages);
+    } catch (err: any) {
+      console.error("Error fetching messages:", err);
+      res
+        .status(500)
+        .json({ error: err.message || "Failed to fetch messages" });
+    }
+  });
+
+  // Send a message
+  app.post("/api/chats/:conversationId/messages", async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { content } = req.body;
+      const userId =
+        (req as any).user?.uid ||
+        (req.headers["x-user-id"] as string) ||
+        (req.query.userId as string) ||
+        (req.body?.userId as string);
+
+      if (!content || !content.trim()) {
+        return res
+          .status(400)
+          .json({ error: "Message content cannot be empty" });
+      }
+      if (!userId) {
+        return res.status(400).json({ error: "Missing user identity" });
+      }
+
+      const message = await storage.createMessage({
+        conversationId,
+        senderId: userId,
+        content: content.trim(),
+        createdAt: new Date(),
+      });
+
+      res.json(message);
+    } catch (err: any) {
+      console.error("Error sending message:", err);
+      res.status(500).json({ error: err.message || "Failed to send message" });
+    }
+  });
+
   // ---------------- SERVER ----------------
 
   const httpServer = createServer(app);

@@ -26,7 +26,7 @@ export default function ContactPage() {
                 href="tel:+254717177069"
                 className="block text-primary hover:underline"
               >
-                +254 7
+                +254 717 177 069
               </a>
             </div>
           </div>

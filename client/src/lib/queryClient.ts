@@ -12,7 +12,8 @@ export async function apiRequest(
   method: string,
   path: string,
   body?: any,
-  token?: string
+  token?: string,
+  extraHeaders?: Record<string, string>
 ): Promise<Response> {
   const headers: Record<string, string> = {};
 
@@ -37,6 +38,11 @@ export async function apiRequest(
       headers["Content-Type"] = "application/json";
       opts.body = typeof body === "string" ? body : JSON.stringify(body);
     }
+  }
+
+  // Merge any extra headers at the end so they can override
+  if (extraHeaders) {
+    Object.assign(headers, extraHeaders);
   }
 
   return fetch(path, opts);
