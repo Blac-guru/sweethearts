@@ -15,8 +15,27 @@ export function getApiBase(): string {
   const envBase = (import.meta as any).env?.VITE_API_BASE_URL as
     | string
     | undefined;
-  if (envBase && envBase.trim()) return envBase.replace(/\/$/, "");
-  return "/api"; // fallback to relative on dev
+
+  // Default for dev: use relative API path which is proxied
+  if (!envBase || !envBase.trim()) return "/api";
+
+  // Normalize provided base: ensure it includes the `/api` path suffix
+  const raw = envBase.trim().replace(/\/+$/, "");
+  try {
+    const url = new URL(raw);
+    // Strip trailing slashes in pathname
+    const pathname = url.pathname.replace(/\/+$/, "");
+    if (pathname === "" || pathname === "/") {
+      url.pathname = "/api";
+    } else if (!/\/?api$/i.test(pathname)) {
+      url.pathname = pathname + "/api";
+    }
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    // If it's a relative path or invalid URL, treat as path and ensure `/api` suffix
+    const path = /\/?api$/i.test(raw) ? raw : `${raw}/api`;
+    return path.replace(/\/+$/, "");
+  }
 }
 
 async function throwIfResNotOk(res: Response) {
