@@ -79,6 +79,8 @@ export default function SearchFilters({ onSearch }: SearchFiltersProps) {
     "Malindi",
     "Mtwapa",
     "Kilifi",
+    "Nyali",
+    "Watamu",
   ];
 
   const allTowns = useMemo(() => {

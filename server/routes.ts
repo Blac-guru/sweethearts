@@ -4,6 +4,7 @@ import { createServer } from "http";
 import express from "express";
 import multer from "multer";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 import { SitemapStream } from "sitemap";
 import { createGzip } from "zlib";
 
@@ -113,6 +114,154 @@ export function applyRoutes(app: Express) {
     } catch (err) {
       console.error("Failed to generate sitemap:", err);
       res.status(500).end();
+    }
+  });
+
+  // ---------------- CHAT USER AUTHENTICATION ----------------
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { name, email, phoneNumber, password } = req.body;
+
+      // Validate input
+      if (!name || !name.trim()) {
+        return res.status(400).json({ error: "Name is required" });
+      }
+
+      if (!password || password.length < 6) {
+        return res
+          .status(400)
+          .json({ error: "Password must be at least 6 characters" });
+      }
+
+      if (!email && !phoneNumber) {
+        return res
+          .status(400)
+          .json({ error: "Either email or phone number is required" });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Create chat user
+      const chatUser = await storage.createChatUser(
+        name,
+        email,
+        phoneNumber,
+        passwordHash
+      );
+
+      console.log(`[Auth] ✓ Chat user registered: ${chatUser.id}`);
+
+      return res.json({
+        id: chatUser.id,
+        name: chatUser.name,
+        email: chatUser.email,
+        phoneNumber: chatUser.phoneNumber,
+        message: "Registration successful",
+      });
+    } catch (err: any) {
+      console.error("[Auth] Registration error:", err);
+      const message = err.message || "Registration failed";
+      return res.status(400).json({ error: message });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { emailOrPhone, password } = req.body;
+
+      // Validate input
+      if (!emailOrPhone || !password) {
+        return res
+          .status(400)
+          .json({ error: "Email/phone and password are required" });
+      }
+
+      // Find chat user
+      const chatUser = await storage.getChatUserByEmailOrPhone(emailOrPhone);
+
+      if (!chatUser) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        chatUser.passwordHash
+      );
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      console.log(`[Auth] ✓ Chat user logged in: ${chatUser.id}`);
+
+      return res.json({
+        id: chatUser.id,
+        name: chatUser.name,
+        email: chatUser.email,
+        phoneNumber: chatUser.phoneNumber,
+        message: "Login successful",
+      });
+    } catch (err: any) {
+      console.error("[Auth] Login error:", err);
+      return res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // Get current chat user info (validates if user exists)
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const chatUserId = req.headers["x-chat-user-id"] as string;
+
+      if (!chatUserId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const chatUser = await storage.getChatUserById(chatUserId);
+
+      if (!chatUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      return res.json({
+        id: chatUser.id,
+        name: chatUser.name,
+        email: chatUser.email,
+        phoneNumber: chatUser.phoneNumber,
+      });
+    } catch (err: any) {
+      console.error("[Auth] Get user error:", err);
+      return res.status(500).json({ error: "Failed to get user info" });
+    }
+  });
+
+  // Get chat user info by ID (public, for displaying in chats)
+  app.get("/api/chat-users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({ error: "User ID required" });
+      }
+
+      const chatUser = await storage.getChatUserById(id);
+
+      if (!chatUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Return user info without password
+      return res.json({
+        id: chatUser.id,
+        name: chatUser.name,
+        email: chatUser.email,
+        phoneNumber: chatUser.phoneNumber,
+      });
+    } catch (err: any) {
+      console.error("[Auth] Get chat user by ID error:", err);
+      return res.status(500).json({ error: "Failed to get user info" });
     }
   });
 
@@ -428,6 +577,11 @@ export function applyRoutes(app: Express) {
     ]),
     async (req, res) => {
       try {
+        const canUploadToCloudinary =
+          !!process.env.CLOUDINARY_CLOUD_NAME &&
+          !!process.env.CLOUDINARY_API_KEY &&
+          !!process.env.CLOUDINARY_API_SECRET;
+
         // ---------------- PARSE SERVICES ----------------
         let services: string[] = [];
         // req.body.services may be a string, array of strings, or not provided
@@ -453,10 +607,23 @@ export function applyRoutes(app: Express) {
         let profilePhotoUrl: string | null = null;
         if (req.files && (req.files as any).profilePhoto) {
           const file = (req.files as any).profilePhoto[0];
-          profilePhotoUrl = await storage.uploadFileToCloudinary(
-            file,
-            "hairdresser-connect/profile"
-          );
+          if (!canUploadToCloudinary) {
+            console.warn(
+              "Skipping profile photo upload: Cloudinary env not configured"
+            );
+          } else {
+            try {
+              profilePhotoUrl = await storage.uploadFileToCloudinary(
+                file,
+                "hairdresser-connect/profile"
+              );
+            } catch (uploadErr) {
+              console.error(
+                "Profile photo upload failed, continuing without photo",
+                uploadErr
+              );
+            }
+          }
         }
 
         // ---------------- UPLOAD SERVICE IMAGES ----------------
@@ -464,14 +631,34 @@ export function applyRoutes(app: Express) {
         if (req.files && (req.files as any).serviceImages) {
           const files = (req.files as any)
             .serviceImages as Express.Multer.File[];
-          serviceImagesUrls = await Promise.all(
-            files.map((file) =>
-              storage.uploadFileToCloudinary(
-                file,
-                "hairdresser-connect/services"
+          if (!canUploadToCloudinary) {
+            console.warn(
+              "Skipping service image uploads: Cloudinary env not configured"
+            );
+          } else {
+            const uploadResults = await Promise.allSettled(
+              files.map((file) =>
+                storage.uploadFileToCloudinary(
+                  file,
+                  "hairdresser-connect/services"
+                )
               )
-            )
-          );
+            );
+
+            serviceImagesUrls = uploadResults
+              .filter(
+                (r): r is PromiseFulfilledResult<string> =>
+                  r.status === "fulfilled"
+              )
+              .map((r) => r.value);
+
+            const failed = uploadResults.filter((r) => r.status === "rejected");
+            if (failed.length) {
+              console.error(
+                `Service image uploads failed (${failed.length}), continuing without them`
+              );
+            }
+          }
         }
 
         // ---------------- CREATE HAIRDRESSER DATA ----------------
@@ -495,6 +682,10 @@ export function applyRoutes(app: Express) {
 
         // ---------------- VALIDATE ----------------
         const validatedData = insertHairdresserSchema.parse(hairdresserData);
+
+        if (!validatedData.firebaseUid) {
+          throw new Error("firebaseUid is required for registration");
+        }
 
         // ---------------- SAVE ----------------
         const createdHairdresser = await storage.createHairdresser(
@@ -880,23 +1071,33 @@ export function applyRoutes(app: Express) {
   app.post("/api/chats/start", async (req, res) => {
     try {
       const { recipientId } = req.body;
-      const userId =
+      let userId =
         (req as any).user?.uid ||
         (req.headers["x-user-id"] as string) ||
         (req.query.userId as string) ||
         (req.body?.userId as string);
 
-      if (!recipientId || recipientId === userId) {
+      // Sanitize: trim whitespace and validate
+      userId = String(userId || "").trim();
+      const sanitizedRecipientId = String(recipientId || "").trim();
+
+      if (!sanitizedRecipientId || sanitizedRecipientId === userId) {
         return res.status(400).json({ error: "Invalid recipient" });
       }
       if (!userId) {
         return res.status(400).json({ error: "Missing user identity" });
       }
 
+      console.log(
+        `[Chat] Starting conversation: ${userId} <-> ${sanitizedRecipientId}`
+      );
+
       const conversationId = await storage.createConversation([
         userId,
-        recipientId,
+        sanitizedRecipientId,
       ]);
+
+      console.log(`[Chat] Created/retrieved conversation: ${conversationId}`);
       res.json({ conversationId });
     } catch (err: any) {
       console.error("Error starting chat:", err);
@@ -907,15 +1108,24 @@ export function applyRoutes(app: Express) {
   // Get user's conversations
   app.get("/api/chats", async (req, res) => {
     try {
-      const userId =
+      let userId =
         (req as any).user?.uid ||
         (req.headers["x-user-id"] as string) ||
         (req.query.userId as string) ||
         (req.body?.userId as string);
+
+      // Sanitize: trim whitespace
+      userId = String(userId || "").trim();
+
       if (!userId) {
         return res.status(400).json({ error: "Missing user identity" });
       }
+
+      console.log(`[Chat] Fetching conversations for user: ${userId}`);
       const conversations = await storage.getConversationsBySender(userId);
+      console.log(
+        `[Chat] Found ${conversations.length} conversations for ${userId}`
+      );
       res.json(conversations);
     } catch (err: any) {
       console.error("Error fetching conversations:", err);
@@ -944,11 +1154,14 @@ export function applyRoutes(app: Express) {
     try {
       const { conversationId } = req.params;
       const { content } = req.body;
-      const userId =
+      let userId =
         (req as any).user?.uid ||
         (req.headers["x-user-id"] as string) ||
         (req.query.userId as string) ||
         (req.body?.userId as string);
+
+      // Sanitize: trim whitespace
+      userId = String(userId || "").trim();
 
       if (!content || !content.trim()) {
         return res
@@ -970,6 +1183,64 @@ export function applyRoutes(app: Express) {
     } catch (err: any) {
       console.error("Error sending message:", err);
       res.status(500).json({ error: err.message || "Failed to send message" });
+    }
+  });
+
+  // Mark messages in a conversation as read
+  app.post("/api/chats/:conversationId/mark-read", async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      let userId =
+        (req as any).user?.uid ||
+        (req.headers["x-user-id"] as string) ||
+        (req.query.userId as string) ||
+        (req.body?.userId as string);
+
+      // Sanitize: trim whitespace
+      userId = String(userId || "").trim();
+
+      if (!userId) {
+        return res.status(400).json({ error: "Missing user identity" });
+      }
+
+      if (!conversationId) {
+        return res.status(400).json({ error: "Missing conversation ID" });
+      }
+
+      // Mark all unread messages from other participants as read
+      await storage.markMessagesAsRead(conversationId, userId);
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Error marking messages as read:", err);
+      res.status(500).json({ error: err.message || "Failed to mark as read" });
+    }
+  });
+
+  // Get unread message count per conversation
+  app.get("/api/chats/:conversationId/unread-count", async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      let userId =
+        (req as any).user?.uid ||
+        (req.headers["x-user-id"] as string) ||
+        (req.query.userId as string) ||
+        (req.body?.userId as string);
+
+      // Sanitize: trim whitespace
+      userId = String(userId || "").trim();
+
+      if (!userId) {
+        return res.status(400).json({ error: "Missing user identity" });
+      }
+
+      const count = await storage.getUnreadMessageCount(conversationId, userId);
+      res.json({ unreadCount: count });
+    } catch (err: any) {
+      console.error("Error fetching unread count:", err);
+      res
+        .status(500)
+        .json({ error: err.message || "Failed to fetch unread count" });
     }
   });
 

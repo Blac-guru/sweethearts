@@ -148,7 +148,7 @@ export default function RegistrationPage() {
 
       // Services array
       data.services.forEach((service) => {
-        formData.append("services", JSON.stringify(data.services));
+        formData.append("services", service);
       });
 
       // Profile photo (single file)
@@ -167,10 +167,30 @@ export default function RegistrationPage() {
         );
       }
 
-      return apiRequest("POST", "/api/hairdressers", formData, globalToken);
+      // Send registration request and ensure we have the newly created ID before continuing
+      const response = await apiRequest(
+        "POST",
+        "/api/hairdressers",
+        formData,
+        globalToken
+      );
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message = (payload as any)?.message || response.statusText;
+        throw new Error(message || "Failed to register. Please try again.");
+      }
+
+      if (!payload?.id) {
+        throw new Error(
+          "Registration succeeded but profile ID is missing. Please try again."
+        );
+      }
+
+      return payload;
     },
-    onSuccess: async (response) => {
-      const hairdresser = await response.json();
+    onSuccess: async (hairdresser) => {
       toast({
         title: "Registration Successful",
         description:

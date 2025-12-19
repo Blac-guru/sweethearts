@@ -17,9 +17,10 @@ import {
   useMessagesQuery,
   useSendMessageMutation,
   useStartConversationMutation,
+  useMarkMessagesAsReadMutation,
 } from "@/hooks/use-chat.js";
 import { Loader2, X } from "lucide-react";
-import { getTestUserId } from "@/lib/chat-api";
+import { getTestUserId, validateChatUser } from "@/lib/chat-api";
 
 interface ChatDialogProps {
   open: boolean;
@@ -41,9 +42,18 @@ export function ChatDialog({
   const [pendingContent, setPendingContent] = useState("");
   const startMutation = useStartConversationMutation();
   const sendMutation = useSendMessageMutation();
+  const markAsReadMutation = useMarkMessagesAsReadMutation();
   const messagesQuery = useMessagesQuery(conversationId || undefined);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const hasStartedRef = useRef(false);
+  const hasMarkedReadRef = useRef(false);
+
+  // Validate chat user on dialog open
+  useEffect(() => {
+    if (open) {
+      validateChatUser();
+    }
+  }, [open]);
 
   const currentUid = getTestUserId();
 
@@ -51,6 +61,7 @@ export function ChatDialog({
   useEffect(() => {
     if (!open) {
       hasStartedRef.current = false;
+      hasMarkedReadRef.current = false;
       return;
     }
     if (!recipientId) {
@@ -91,6 +102,19 @@ export function ChatDialog({
       cancelled = true;
     };
   }, [open, recipientId, conversationId]);
+
+  // Mark messages as read when conversation opens
+  useEffect(() => {
+    if (
+      open &&
+      conversationId &&
+      !hasMarkedReadRef.current &&
+      !markAsReadMutation.isPending
+    ) {
+      hasMarkedReadRef.current = true;
+      markAsReadMutation.mutate(conversationId);
+    }
+  }, [open, conversationId, markAsReadMutation]);
 
   // Auto-scroll to latest message
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -49,9 +49,22 @@ export default function VerificationPage() {
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/verify/:id");
   const hairdresserId = params?.id;
+  const isMissingId = !hairdresserId;
 
   const { toast } = useToast();
   const [country, setCountry] = useState("Kenya");
+
+  useEffect(() => {
+    if (!hairdresserId) {
+      toast({
+        title: "Profile not found",
+        description:
+          "We could not identify your new profile. Please restart registration.",
+        variant: "destructive",
+      });
+      setLocation("/register/details");
+    }
+  }, [hairdresserId, setLocation, toast]);
 
   const form = useForm<VerificationData>({
     resolver: zodResolver(verificationSchema),
@@ -67,6 +80,12 @@ export default function VerificationPage() {
 
   const verificationMutation = useMutation({
     mutationFn: async (data: VerificationData) => {
+      if (!hairdresserId) {
+        throw new Error(
+          "Missing profile ID. Please return to registration and try again."
+        );
+      }
+
       const formData = new FormData();
       const finalCountry =
         data.country === "Other" ? data.otherCountry || "" : data.country;
@@ -388,7 +407,7 @@ export default function VerificationPage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={verificationMutation.isPending}
+                  disabled={verificationMutation.isPending || isMissingId}
                 >
                   {verificationMutation.isPending ? (
                     <>

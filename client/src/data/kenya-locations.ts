@@ -564,17 +564,6 @@ export const KENYA_LOCATIONS: LocationsData[] = [
               { id: 405, name: "Ganjoni" },
             ],
           },
-          {
-            id: 5,
-            name: "Nyali",
-            subEstates: [
-              { id: 501, name: "Kongowea" },
-              { id: 502, name: "Mkomani" },
-              { id: 503, name: "English Point" },
-              { id: 504, name: "Nyali Bridge Area" },
-              { id: 505, name: "Vescon" },
-            ],
-          },
         ],
       },
       {
@@ -2221,6 +2210,50 @@ export const KENYA_LOCATIONS: LocationsData[] = [
           {
             id: 17,
             name: "Thika Road",
+          },
+        ],
+      },
+      {
+        id: 14,
+        name: "Nyali",
+        estates: [
+          {
+            id: 1,
+            name: "Nyali Estate",
+            subEstates: [
+              { id: 101, name: "Nyali Links" },
+              { id: 102, name: "Nyali Golf Estate" },
+            ],
+          },
+          {
+            id: 2,
+            name: "Nyali Beach",
+            subEstates: [
+              { id: 201, name: "Nyali Beach Resort" },
+              { id: 202, name: "Nyali Waterfront" },
+            ],
+          },
+        ],
+      },
+      {
+        id: 15,
+        name: "Watamu",
+        estates: [
+          {
+            id: 1,
+            name: "Watamu Centre",
+            subEstates: [
+              { id: 101, name: "Watamu Town" },
+              { id: 102, name: "Watamu Market" },
+            ],
+          },
+          {
+            id: 2,
+            name: "Watamu Beach",
+            subEstates: [
+              { id: 201, name: "Watamu Turtle Bay" },
+              { id: 202, name: "Watamu Gardens" },
+            ],
           },
         ],
       },

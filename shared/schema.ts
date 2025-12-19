@@ -1,7 +1,7 @@
 import { z } from "zod";
 import Timestamp from "firebase-admin/firestore";
 
-/* ---------------- USERS ---------------- */
+/* ---------------- USERS (Legacy) ---------------- */
 export const insertUserSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(6), // enforce a min length
@@ -13,6 +13,27 @@ export type User = {
   id: string;
   username: string;
   password: string; // hashed before saving
+};
+
+/* ---------------- CHAT USERS (Regular users who chat with profiles) ---------------- */
+export const insertChatUserSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email().optional(),
+  phoneNumber: z.string().min(1).optional(),
+  password: z.string().min(6), // Will be hashed before saving
+  createdAt: z.date().optional(),
+});
+
+export type InsertChatUser = z.infer<typeof insertChatUserSchema>;
+
+export type ChatUser = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phoneNumber?: string | null;
+  passwordHash: string; // Hashed password
+  createdAt: Date;
+  updatedAt?: Date;
 };
 
 /* ---------------- LOCATIONS ---------------- */

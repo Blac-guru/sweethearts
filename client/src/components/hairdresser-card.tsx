@@ -22,6 +22,8 @@ import { Phone, MessageCircle, MapPin, Sparkles } from "lucide-react";
 import type { HairdresserWithLocation } from "@shared/schema.js";
 import { ChatDialog } from "@/components/chat-dialog.jsx";
 import { useToast } from "@/hooks/use-toast.js";
+import { useLocation } from "wouter";
+import { isUserAuthenticated } from "@/lib/chat-api";
 
 interface HairdresserCardProps {
   hairdresser: HairdresserWithLocation;
@@ -31,6 +33,7 @@ export default function HairdresserCard({ hairdresser }: HairdresserCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const whatsappNumber = hairdresser.whatsappNumber || hairdresser.phoneNumber;
   const fallbackImage =
     "https://i0.wp.com/exotickenya.date/wp-content/uploads/2024/01/E8Ex9xTWUAMUpEV.jpg?resize=721%2C550&ssl=1";
@@ -224,7 +227,13 @@ export default function HairdresserCard({ hairdresser }: HairdresserCardProps) {
               <Button
                 variant="outline"
                 className="justify-start gap-2"
-                onClick={() => setChatOpen(true)}
+                onClick={() => {
+                  if (!isUserAuthenticated()) {
+                    setLocation("/chat-login");
+                  } else {
+                    setChatOpen(true);
+                  }
+                }}
               >
                 <MessageCircle className="h-4 w-4" /> Chat
               </Button>
@@ -245,6 +254,7 @@ export default function HairdresserCard({ hairdresser }: HairdresserCardProps) {
         onOpenChange={setChatOpen}
         recipientId={hairdresser.firebaseUid || hairdresser.id}
         recipientName={hairdresser.nickName}
+        recipientPhoto={hairdresser.profilePhoto || undefined}
       />
     </Dialog>
   );

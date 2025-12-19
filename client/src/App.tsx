@@ -19,6 +19,9 @@ import ParentalControlsPage from "./pages/parental-controls.jsx";
 import CookieConsent from "./components/cookie-consent.jsx";
 import SearchPage from "./pages/search.jsx";
 import ChatsPage from "./pages/chats.jsx";
+import VerificationPage from "./pages/verification.jsx";
+import ChatLoginPage from "./pages/chat-login.jsx";
+import ChatRegistrationPage from "./pages/chat-registration.jsx";
 import { HelmetProvider } from "react-helmet-async";
 
 function Router() {
@@ -39,6 +42,8 @@ function Router() {
       <Route path="/search" component={SearchPage} />
       <Route path="/profile/:id" component={ProfilePage} />
       <Route path="/chats" component={ChatsPage} />
+      <Route path="/chat-login" component={ChatLoginPage} />
+      <Route path="/chat-register" component={ChatRegistrationPage} />
       <Route path="/register" component={SetupAccountPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/register/details" component={RegistrationPage} />
@@ -47,6 +52,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/cookie-policy" component={CookiePolicyPage} />
       <Route path="/parental" component={ParentalControlsPage} />
+      <Route path="/verify/:id" component={VerificationPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -7,6 +7,8 @@ import {
   Blog,
   InsertBlog,
   Verification,
+  type ChatUser,
+  type InsertChatUser,
 } from "@shared/schema.js";
 import {
   Message,
@@ -72,6 +74,39 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
+  // Chat Users
+  createChatUser(
+    name: string,
+    email: string | undefined,
+    phoneNumber: string | undefined,
+    passwordHash: string
+  ): Promise<{
+    id: string;
+    name: string;
+    email?: string;
+    phoneNumber?: string;
+  }>;
+  getChatUserByEmailOrPhone(emailOrPhone: string): Promise<
+    | {
+        id: string;
+        name: string;
+        email?: string;
+        phoneNumber?: string;
+        passwordHash: string;
+      }
+    | undefined
+  >;
+  getChatUserById(id: string): Promise<
+    | {
+        id: string;
+        name: string;
+        email?: string;
+        phoneNumber?: string;
+        passwordHash: string;
+      }
+    | undefined
+  >;
+
   getAllHairdressersForSitemap(): Promise<
     {
       id: string;
@@ -120,6 +155,11 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   getMessagesByConversation(conversationId: string): Promise<Message[]>;
   markMessageAsRead(messageId: string): Promise<void>;
+  markMessagesAsRead(conversationId: string, userId: string): Promise<void>;
+  getUnreadMessageCount(
+    conversationId: string,
+    userId: string
+  ): Promise<number>;
 }
 
 // Check if object has 'buffer' property (Multer files)
@@ -132,6 +172,7 @@ export class FirestoreStorage implements IStorage {
   private usersCollection = db.collection("users");
   private sweetheartsCollection = db.collection("sweethearts");
   private blogsCollection = db.collection("blogs");
+  private chatUsersCollection = db.collection("chatUsers");
 
   async createBlog(insertBlog: InsertBlog): Promise<Blog> {
     const data: Omit<Blog, "id"> = {
@@ -297,6 +338,142 @@ export class FirestoreStorage implements IStorage {
     const user = snapshot.docs[0].data() as User;
     const isMatch = await bcrypt.compare(password, user.password);
     return isMatch ? user : null;
+  }
+
+  /* ---------- CHAT USERS ---------- */
+  async createChatUser(
+    name: string,
+    email: string | undefined,
+    phoneNumber: string | undefined,
+    passwordHash: string
+  ): Promise<{
+    id: string;
+    name: string;
+    email?: string;
+    phoneNumber?: string;
+  }> {
+    // Validate that name is provided
+    if (!name || !name.trim()) {
+      throw new Error("Name is required");
+    }
+
+    // Validate that at least one contact method is provided
+    if (!email && !phoneNumber) {
+      throw new Error("Either email or phone number must be provided");
+    }
+
+    // Check if user already exists
+    if (email) {
+      const existingEmail = await this.chatUsersCollection
+        .where("email", "==", email.trim().toLowerCase())
+        .limit(1)
+        .get();
+      if (!existingEmail.empty) {
+        throw new Error("Email already registered");
+      }
+    }
+
+    if (phoneNumber) {
+      const existingPhone = await this.chatUsersCollection
+        .where("phoneNumber", "==", phoneNumber.trim())
+        .limit(1)
+        .get();
+      if (!existingPhone.empty) {
+        throw new Error("Phone number already registered");
+      }
+    }
+
+    const newChatUser = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      email: email ? email.trim().toLowerCase() : null,
+      phoneNumber: phoneNumber ? phoneNumber.trim() : null,
+      passwordHash,
+      createdAt: new Date(),
+    };
+
+    await this.chatUsersCollection.doc(newChatUser.id).set(newChatUser);
+
+    return {
+      id: newChatUser.id,
+      name: newChatUser.name,
+      email: newChatUser.email || undefined,
+      phoneNumber: newChatUser.phoneNumber || undefined,
+    };
+  }
+
+  async getChatUserByEmailOrPhone(
+    emailOrPhone: string
+  ): Promise<
+    | { id: string; email?: string; phoneNumber?: string; passwordHash: string }
+    | undefined
+  > {
+    const normalized = emailOrPhone.trim().toLowerCase();
+
+    // Try email first
+    if (emailOrPhone.includes("@")) {
+      const emailSnapshot = await this.chatUsersCollection
+        .where("email", "==", normalized)
+        .limit(1)
+        .get();
+
+      if (!emailSnapshot.empty) {
+        const doc = emailSnapshot.docs[0];
+        const data = doc.data() as any;
+        return {
+          id: doc.id,
+          name: data.name || "",
+          email: data.email || undefined,
+          phoneNumber: data.phoneNumber || undefined,
+          passwordHash: data.passwordHash,
+        };
+      }
+    }
+
+    // Try phone number
+    const phoneSnapshot = await this.chatUsersCollection
+      .where("phoneNumber", "==", emailOrPhone.trim())
+      .limit(1)
+      .get();
+
+    if (!phoneSnapshot.empty) {
+      const doc = phoneSnapshot.docs[0];
+      const data = doc.data() as any;
+      return {
+        id: doc.id,
+        name: data.name || "",
+        email: data.email || undefined,
+        phoneNumber: data.phoneNumber || undefined,
+        passwordHash: data.passwordHash,
+      };
+    }
+
+    return undefined;
+  }
+
+  async getChatUserById(
+    id: string
+  ): Promise<
+    | {
+        id: string;
+        name: string;
+        email?: string;
+        phoneNumber?: string;
+        passwordHash: string;
+      }
+    | undefined
+  > {
+    const doc = await this.chatUsersCollection.doc(id).get();
+    if (!doc.exists) return undefined;
+
+    const data = doc.data() as any;
+    return {
+      id: doc.id,
+      name: data.name || "",
+      email: data.email || undefined,
+      phoneNumber: data.phoneNumber || undefined,
+      passwordHash: data.passwordHash,
+    };
   }
 
   /* ---------- LOCATIONS ---------- */
@@ -763,8 +940,20 @@ export class FirestoreStorage implements IStorage {
 
   /* ========== CHAT & MESSAGING ========== */
   async createConversation(participantIds: string[]): Promise<string> {
-    const sortedIds = participantIds.sort();
+    // Sanitize and deduplicate participant IDs
+    const sanitized = Array.from(
+      new Set(participantIds.map((id) => String(id).trim()).filter(Boolean))
+    );
+
+    if (sanitized.length < 2) {
+      throw new Error("Conversation requires at least 2 participants");
+    }
+
+    // Sort for deterministic conversation ID
+    const sortedIds = sanitized.sort();
     const conversationId = sortedIds.join("_");
+
+    console.log(`[Storage] Creating conversation: ${conversationId}`);
 
     const existing = await db
       .collection("conversations")
@@ -772,6 +961,7 @@ export class FirestoreStorage implements IStorage {
       .get();
 
     if (existing.exists) {
+      console.log(`[Storage] Conversation already exists: ${conversationId}`);
       return conversationId;
     }
 
@@ -783,6 +973,7 @@ export class FirestoreStorage implements IStorage {
       updatedAt: new Date(),
     };
 
+    console.log(`[Storage] Setting new conversation: ${conversationId}`);
     await db.collection("conversations").doc(conversationId).set(conversation);
     return conversationId;
   }
@@ -848,6 +1039,50 @@ export class FirestoreStorage implements IStorage {
   async markMessageAsRead(_messageId: string): Promise<void> {
     // Placeholder: message documents are scoped by conversationId; implement when structure is available
     return;
+  }
+
+  // Mark all unread messages from other senders as read for a user
+  async markMessagesAsRead(
+    conversationId: string,
+    userId: string
+  ): Promise<void> {
+    const snap = await db
+      .collection("conversations")
+      .doc(conversationId)
+      .collection("messages")
+      .where("senderId", "!=", userId)
+      .where("readAt", "==", null)
+      .get();
+
+    const batch = db.batch();
+    const now = new Date();
+
+    snap.docs.forEach((doc) => {
+      batch.update(doc.ref, { readAt: now });
+    });
+
+    if (snap.docs.length > 0) {
+      console.log(
+        `[Storage] Marking ${snap.docs.length} messages as read for user ${userId} in conversation ${conversationId}`
+      );
+      await batch.commit();
+    }
+  }
+
+  // Get count of unread messages from other senders for a user
+  async getUnreadMessageCount(
+    conversationId: string,
+    userId: string
+  ): Promise<number> {
+    const snap = await db
+      .collection("conversations")
+      .doc(conversationId)
+      .collection("messages")
+      .where("senderId", "!=", userId)
+      .where("readAt", "==", null)
+      .get();
+
+    return snap.size;
   }
 }
 

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button.jsx";
 import { Badge } from "@/components/ui/badge.jsx";
 import { Card, CardContent } from "@/components/ui/card.jsx";
@@ -20,19 +20,24 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input.jsx";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast.js";
+import { ChatDialog } from "@/components/chat-dialog.jsx";
 
 // imports
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase.js";
 import { useAuthStore } from "@/store/useAuthStore.js";
+import { getTestUserId, isUserAuthenticated } from "@/lib/chat-api.js";
 
 export default function ProfilePage() {
   const [user] = useAuthState(auth);
   const [match, params] = useRoute("/profile/:id");
   const hairdresserId = params?.id;
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   const userEmail = useAuthStore((state) => state.userEmail);
+  const currentUserId = getTestUserId();
 
   const [phoneForPayment, setPhoneForPayment] = useState("");
   const [emailForPayment, setEmailForPayment] = useState(userEmail || "");
@@ -261,7 +266,7 @@ export default function ProfilePage() {
                   </span>
                 </p>
 
-                <div className="flex justify-center md:justify-start space-x-4 mt-4">
+                <div className="flex justify-center md:justify-start space-x-4 mt-4 flex-wrap gap-2">
                   <a
                     href={`tel:${hairdresser.phoneNumber}`}
                     className="bg-white text-primary px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors inline-flex items-center"
@@ -270,6 +275,21 @@ export default function ProfilePage() {
                     <Phone className="w-4 h-4 mr-2" />
                     Call Now
                   </a>
+
+                  <Button
+                    onClick={() => {
+                      if (!isUserAuthenticated()) {
+                        setLocation("/chat-login");
+                      } else {
+                        setChatOpen(true);
+                      }
+                    }}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors inline-flex items-center"
+                    data-testid="button-chat"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Send Message
+                  </Button>
 
                   <a
                     href={`https://wa.me/${whatsappNumber.replace(
@@ -522,6 +542,17 @@ export default function ProfilePage() {
             ✕
           </button>
         </div>
+      )}
+
+      {/* Chat Dialog */}
+      {hairdresser && (
+        <ChatDialog
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          recipientId={hairdresserId}
+          recipientName={hairdresser.nickName || hairdresser.fullName}
+          recipientPhoto={hairdresser.profilePhoto || undefined}
+        />
       )}
     </div>
   );

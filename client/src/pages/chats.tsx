@@ -1,5 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
-import { useConversationsQuery } from "@/hooks/use-chat.js";
+import {
+  useConversationsQuery,
+  useConversationUnreadCount,
+} from "@/hooks/use-chat.js";
 import { getTestUserId, getApiBase } from "@/lib/chat-api";
 import { ChatDialog } from "@/components/chat-dialog.jsx";
 import { Button } from "@/components/ui/button.jsx";
@@ -10,6 +13,7 @@ import {
   AvatarImage,
   AvatarFallback,
 } from "@/components/ui/avatar.jsx";
+import { Badge } from "@/components/ui/badge.jsx";
 import { HairdresserWithLocation } from "@shared/schema";
 import { MessageSquare, ChevronRight } from "lucide-react";
 import Navbar from "@/components/navbar";
@@ -35,6 +39,62 @@ function formatRelativeTime(date: Date): string {
   });
 }
 
+interface ConversationCardProps {
+  conversationId: string;
+  label: string;
+  profilePhoto: string | null;
+  lastMessageAt?: Date;
+  onSelect: () => void;
+}
+
+function ConversationCard({
+  conversationId,
+  label,
+  profilePhoto,
+  lastMessageAt,
+  onSelect,
+}: ConversationCardProps) {
+  const { data: unreadCount = 0 } = useConversationUnreadCount(conversationId);
+
+  return (
+    <Card
+      className="p-4 cursor-pointer transition-all hover:shadow-md hover:bg-accent group"
+      onClick={onSelect}
+    >
+      <div className="flex items-center gap-4 justify-between">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <Avatar className="h-12 w-12 flex-shrink-0">
+            <AvatarImage src={profilePhoto || ""} alt={label} />
+            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-400 text-white font-bold">
+              {label.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-foreground truncate">
+              {label}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {lastMessageAt
+                ? formatRelativeTime(lastMessageAt)
+                : "No messages yet"}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {unreadCount > 0 && (
+            <Badge className="bg-pink-500 hover:bg-pink-600 text-white">
+              {unreadCount}
+            </Badge>
+          )}
+          <div className="text-muted-foreground group-hover:text-foreground transition-colors">
+            <ChevronRight className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function ChatsPage() {
   const { data, isLoading, isError, error, refetch } = useConversationsQuery();
   const myId = getTestUserId();
@@ -58,21 +118,47 @@ export default function ChatsPage() {
     Promise.all(
       allParticipantIds.map(async (id) => {
         try {
-          const url = `${getApiBase()}/hairdressers/${id}`;
-          console.log(`[Chat] Fetching profile for ${id} from ${url}`);
-          const res = await fetch(url);
+          // Try fetching as hairdresser first
+          const hairdresserUrl = `${getApiBase()}/hairdressers/${id}`;
+          console.log(
+            `[Chat] Fetching profile for ${id} from ${hairdresserUrl}`
+          );
+          const hairdresserRes = await fetch(hairdresserUrl);
 
-          if (res.ok) {
-            const profile = await res.json();
-            console.log(`[Chat] ✓ Got profile for ${id}:`, {
+          if (hairdresserRes.ok) {
+            const profile = await hairdresserRes.json();
+            console.log(`[Chat] ✓ Got hairdresser profile for ${id}:`, {
               name: profile.nickName || profile.fullName,
               hasPhoto: !!profile.profilePhoto,
             });
-            return { id, data: profile };
+            return { id, data: profile, type: "hairdresser" };
+          }
+
+          // If hairdresser fetch failed, try fetching as chat user
+          const chatUserUrl = `${getApiBase()}/chat-users/${id}`;
+          console.log(`[Chat] Trying chat user for ${id} from ${chatUserUrl}`);
+          const chatUserRes = await fetch(chatUserUrl);
+
+          if (chatUserRes.ok) {
+            const chatUser = await chatUserRes.json();
+            console.log(`[Chat] ✓ Got chat user for ${id}:`, {
+              name: chatUser.name,
+            });
+            // Transform chat user to match hairdresser structure for display
+            return {
+              id,
+              data: {
+                id: chatUser.id,
+                fullName: chatUser.name,
+                nickName: chatUser.name,
+                profilePhoto: null,
+              },
+              type: "chatUser",
+            };
           } else {
-            const text = await res.text().catch(() => "");
+            const text = await chatUserRes.text().catch(() => "");
             console.warn(
-              `[Chat] ✗ Failed to fetch ${id}: ${res.status} ${res.statusText}`,
+              `[Chat] ✗ Failed to fetch ${id} as both hairdresser and chat user`,
               text.slice(0, 100)
             );
           }
@@ -103,10 +189,20 @@ export default function ChatsPage() {
   }, [data, myId]);
 
   const list = useMemo(() => {
-    return (data || []).map((c) => {
+    // Deduplicate by participant identity (handles both firebaseUid and document id)
+    const seenParticipants = new Map<string, string>(); // key -> canonical participant id
+    const deduplicated: any[] = [];
+
+    const items = (data || []).map((c) => {
       const otherId =
         (c.participantIds || []).find((p) => p !== myId) || "unknown";
       const participant = participants[otherId];
+
+      // Create canonical identifier using actual profile data if available
+      const canonicalId = participant
+        ? participant.firebaseUid || participant.id
+        : otherId;
+
       // Fallback label chain: nickName > fullName > "User" (since all have a profile in chats)
       const label =
         participant?.nickName ||
@@ -144,6 +240,7 @@ export default function ChatsPage() {
       return {
         conversationId: c.id,
         otherId,
+        canonicalId, // Add canonical identifier
         label,
         lastMessageAt,
         profilePhoto: participant?.profilePhoto || null,
@@ -151,6 +248,30 @@ export default function ChatsPage() {
         nickName: participant?.nickName || null,
       };
     });
+
+    // Sort by most recent message first
+    items.sort(
+      (a, b) =>
+        (b.lastMessageAt?.getTime() || 0) - (a.lastMessageAt?.getTime() || 0)
+    );
+
+    // Keep only the first (most recent) conversation per canonical participant
+    items.forEach((item) => {
+      const existingConversationId = seenParticipants.get(item.canonicalId);
+
+      if (!existingConversationId) {
+        // First conversation with this participant - keep it
+        seenParticipants.set(item.canonicalId, item.conversationId);
+        deduplicated.push(item);
+      } else {
+        // Duplicate conversation with same participant - skip
+        console.log(
+          `[Chats] Skipping duplicate conversation ${item.conversationId} (already have ${existingConversationId} for ${item.label})`
+        );
+      }
+    });
+
+    return deduplicated;
   }, [data, myId, participants]);
 
   return (
@@ -188,41 +309,20 @@ export default function ChatsPage() {
 
       <div className="space-y-2">
         {list.map((c) => (
-          <Card
+          <ConversationCard
             key={c.conversationId}
-            className="p-4 cursor-pointer transition-all hover:shadow-md hover:bg-accent group"
-            onClick={() =>
+            conversationId={c.conversationId}
+            label={c.label}
+            profilePhoto={c.profilePhoto}
+            lastMessageAt={c.lastMessageAt}
+            onSelect={() =>
               setSelected({
                 id: c.otherId,
                 name: c.label,
                 photo: c.profilePhoto || undefined,
               })
             }
-          >
-            <div className="flex items-center gap-4 justify-between">
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                <Avatar className="h-12 w-12 flex-shrink-0">
-                  <AvatarImage src={c.profilePhoto || ""} alt={c.label} />
-                  <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-400 text-white font-bold">
-                    {c.label.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-foreground truncate">
-                    {c.label}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {c.lastMessageAt
-                      ? formatRelativeTime(c.lastMessageAt)
-                      : "No messages yet"}
-                  </div>
-                </div>
-              </div>
-              <div className="flex-shrink-0 text-muted-foreground group-hover:text-foreground transition-colors">
-                <ChevronRight className="h-5 w-5" />
-              </div>
-            </div>
-          </Card>
+          />
         ))}
       </div>
 

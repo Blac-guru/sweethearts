@@ -1,14 +1,133 @@
 import { apiRequest } from "@/lib/queryClient.js";
 import { Conversation, Message } from "@shared/schema";
+import { getAuth } from "firebase/auth";
+
+/**
+ * Logout chat user by clearing localStorage
+ */
+export function logoutChatUser(): void {
+  localStorage.removeItem("chatUserId");
+  console.log("[ChatAPI] Chat user logged out");
+}
+
+/**
+ * Validate if the stored chatUserId still exists in Firestore
+ */
+export async function validateChatUser(): Promise<boolean> {
+  const chatUserId = localStorage.getItem("chatUserId");
+  if (!chatUserId) return false;
+
+  try {
+    const apiBase = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+    const response = await fetch(`${apiBase}/api/auth/me`, {
+      headers: {
+        "x-chat-user-id": chatUserId,
+      },
+    });
+
+    if (!response.ok) {
+      // User doesn't exist in Firestore, clear localStorage
+      logoutChatUser();
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("[ChatAPI] Error validating chat user:", err);
+    return false;
+  }
+}
+
+/**
+ * Get current chat user info from API
+ */
+export async function getChatUserInfo(): Promise<{
+  id: string;
+  name: string;
+  email?: string;
+  phoneNumber?: string;
+} | null> {
+  const chatUserId = localStorage.getItem("chatUserId");
+  if (!chatUserId) return null;
+
+  try {
+    const apiBase = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+    const response = await fetch(`${apiBase}/api/auth/me`, {
+      headers: {
+        "x-chat-user-id": chatUserId,
+      },
+    });
+
+    if (!response.ok) {
+      logoutChatUser();
+      return null;
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error("[ChatAPI] Error getting chat user info:", err);
+    return null;
+  }
+}
+
+/**
+ * Check if user is authenticated (has chat user ID or is Firebase auth user)
+ */
+export function isUserAuthenticated(): boolean {
+  // Check for chat user ID (from chat login/register)
+  const chatUserId = localStorage.getItem("chatUserId");
+  if (chatUserId) {
+    return true;
+  }
+
+  // Check for Firebase authenticated user (profile users)
+  const auth = getAuth();
+  const firebaseUser = auth.currentUser;
+  if (firebaseUser?.uid) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Get current user ID - prioritizes chat user ID, then Firebase UID
+ * Returns null if not authenticated
+ */
+export async function getCurrentUserId(): Promise<string | null> {
+  // Priority 1: Chat user ID (from chat login/register)
+  const chatUserId = localStorage.getItem("chatUserId");
+  if (chatUserId) {
+    return chatUserId;
+  }
+
+  // Priority 2: Firebase authenticated user (profile users)
+  const auth = getAuth();
+  const firebaseUser = auth.currentUser;
+  if (firebaseUser?.uid) {
+    return firebaseUser.uid;
+  }
+
+  // No authentication found
+  return null;
+}
 
 export function getTestUserId(): string {
-  const key = "chat_test_user_id";
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = `guest-${Math.random().toString(36).slice(2, 10)}`;
-    localStorage.setItem(key, id);
+  // Priority 1: Chat user ID
+  const chatUserId = localStorage.getItem("chatUserId");
+  if (chatUserId) {
+    return chatUserId;
   }
-  return id;
+
+  // Priority 2: Firebase authenticated user
+  const auth = getAuth();
+  const firebaseUser = auth.currentUser;
+  if (firebaseUser?.uid) {
+    return firebaseUser.uid;
+  }
+
+  // Return empty string if not authenticated (endpoints will reject)
+  return "";
 }
 
 export function getApiBase(): string {
@@ -109,4 +228,30 @@ export async function sendMessage(
   );
   await throwIfResNotOk(res);
   return res.json();
+}
+
+export async function markMessagesAsRead(
+  conversationId: string
+): Promise<void> {
+  const res = await apiRequest(
+    "POST",
+    `${getApiBase()}/chats/${conversationId}/mark-read`,
+    {},
+    undefined,
+    { "x-user-id": getTestUserId() }
+  );
+  await throwIfResNotOk(res);
+}
+
+export async function getUnreadCount(conversationId: string): Promise<number> {
+  const res = await apiRequest(
+    "GET",
+    `${getApiBase()}/chats/${conversationId}/unread-count`,
+    undefined,
+    undefined,
+    { "x-user-id": getTestUserId() }
+  );
+  await throwIfResNotOk(res);
+  const data = await res.json();
+  return data.unreadCount || 0;
 }
